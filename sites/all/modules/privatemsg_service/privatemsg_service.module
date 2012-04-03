@@ -1,0 +1,125 @@
+<?php
+
+function privatemsg_service_perm() {
+    return array(
+            'privatemsg_service from remote',
+    );
+}
+
+function privatemsg_service_access() {
+    return TRUE;
+}
+
+/**
+ * Implementation of hook_services_resources().
+ */
+function privatemsg_service_services_resources() {
+  $resources = array();
+
+  $resources['privatemsg']['actions']['send_by_phoneno'] = array(
+    'file' => array( 'type' => 'inc', 'module' => 'privatemsg_service', 'name' => 'privatemsg_service',
+    ),
+    'help'   => t('Send privatemsg'),
+    'access callback' => 'privatemsg_service_access',
+    // 'access arguments' => array('access content'),
+    'callback' => 'privatemsg_service_send_by_phoneno',
+    'args'     => array(
+      array(
+        'name' => 'sender_phoneno',
+        'type' => 'string',
+        'description' => t('sender phone number.'),
+        'source' => array('data' => 'sender_phoneno'),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'recipient_phoneno_list',
+        // 'type' => 'array',
+        'type' => 'string',
+        'description' => t('recipients list'),
+        'source' => array('data' => 'recipient_phoneno_list'),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'body',
+        'type' => 'string',
+        'description' => t('message body'),
+        'source' => array('data' => 'body'),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'subject',
+        'type' => 'string',
+        'description' => t('message subject'),
+        'source' => array('data' => 'subject'),
+        'optional' => TRUE,
+      ),
+    ),
+  );
+
+  $resources['privatemsg']['actions']['get_by_phoneno'] = array(
+    'file' => array(
+      'type' => 'inc', 'module' => 'privatemsg_service', 'name' => 'privatemsg_service',
+    ),
+    'help'   => t('Get privatemsg '),
+    'access arguments' => array('access content'),
+    'callback' => 'privatemsg_service_get_by_phoneno',
+    'args'     => array(
+      array(
+        'name' => 'offset',
+        'type' => 'int',
+        'description' => t('An offset intger for paing.'),
+        'source' => array('data' => 'offset'),
+        'optional' => TRUE,
+      ),
+      array(
+        'name' => 'limit',
+        'type' => 'int',
+        'description' => t('A limit integer for paging.'),
+        'source' => array('data' => 'limit'),
+        'optional' => TRUE,
+      ),
+      array(
+        'name' => 'recipient_phoneno',
+        'type' => 'string',
+        'description' => t('privatemsg recipient phone number.'),
+        'source' => array('data' => 'recipient_phoneno'),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'sender_phoneno',
+        'type' => 'string',
+        'description' => t('privatemsg owner`s phone number.'),
+        'source' => array('data' => 'sender_phoneno'),
+        'optional' => TRUE,
+      ),
+    ),
+  );
+
+  $resources['privatemsg']['actions']['get_by_mid'] = array(
+    'file' => array(
+      'type' => 'inc', 'module' => 'privatemsg_service', 'name' => 'privatemsg_service',
+    ),
+    'help'   => t('Get privatemsg by mid'),
+    'access arguments' => array('access content'),
+    'callback' => 'privatemsg_service_get_by_mid',
+    'args'     => array(
+      array(
+        'name' => 'mid',
+        'type' => 'int',
+        'description' => t('An message id'),
+        'source' => array('data' => 'mid'),
+        'optional' => FALSE,
+      ),
+      array(
+        'name' => 'recipient_phoneno',
+        'type' => 'string',
+        'description' => t('privatemsg recipient phone number.'),
+        'source' => array('data' => 'recipient_phoneno'),
+        'optional' => FALSE,
+      ),
+    ),
+  );
+
+  return $resources;
+}
+

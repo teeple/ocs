@@ -1,0 +1,9 @@
+<?php
+
+/*
+function privatemsg_spam_views_api() {
+  return ( array(
+    'api' => 3.0,
+  ));
+}
+*/

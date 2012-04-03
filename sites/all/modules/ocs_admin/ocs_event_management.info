@@ -1,0 +1,6 @@
+name = "Envent Management"
+description = "OCS Event Managment"
+version = "7.x-1.0"
+core = 7.x
+package = OCS Admin
+files[] = ocs_event_management.module

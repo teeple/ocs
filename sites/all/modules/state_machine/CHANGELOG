@@ -1,0 +1,3 @@
+State Flow 7.x-1.x
+------------------
+Conditional to build taxonomy index on hook_node_insert, hook_node_update; function only exists in Drupal core 7.12

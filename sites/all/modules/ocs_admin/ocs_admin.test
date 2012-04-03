@@ -1,0 +1,13 @@
+<?php
+class ocs_adminTestCase extends DrupalWebTestCase {
+    /**
+     * Implementation of getInfo().
+     */
+    public static function getInfo() {
+        return array(
+            'name' => t('Beginning Drupal Commnet Filter'),
+            'description' => t('Tests the Beginning Drupal comment filter'),
+            'group' => t('Beginning Drupal'),
+        );
+	} // end function getInfor()
+} // end else

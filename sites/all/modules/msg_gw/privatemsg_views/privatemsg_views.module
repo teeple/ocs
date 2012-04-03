@@ -1,0 +1,345 @@
+<?php
+
+/**
+ * @file:
+ * Privatemsg_views module.
+ */
+
+/**
+ * Implementation of hook_views_api.
+ */
+function privatemsg_views_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'privatemsg_views'),
+  );
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function privatemsg_views_init() {
+  if (module_exists('views_bulk_operations')) {
+    module_load_include('inc', 'privatemsg_views', 'includes/privatemsg_views.vbo');
+  }
+}
+
+/**
+ * Return thread participants.
+ * 
+ * Participants are ordered by the time of participation. Users
+ * which are recipients (not authors) are placed in the end of the list.
+ * 
+ * @param $threads
+ *  single thread ID or array of thread IDs.
+ * @return unknown_type
+ *  array of participant lists, keyed by thread IDs. Each list is array of 
+ *  participant objects having username and uid. 
+ *  
+ */
+function privatemsg_views_get_participants($threads) {
+  static $cache = array();
+  if (!is_array($threads)) {
+    $threads = array($threads);
+  }
+  $result = array();
+  $select_threads = array();
+  foreach($threads as $thread_id) {
+    if (isset($cache[$thread_id])) {
+      $result[$thread_id] = $cache[$thread_id];
+    }
+    else {
+      $select_threads[] = $thread_id; 
+    }
+  }
+  if (!empty($select_threads)) {
+    $query  = "SELECT pmi.uid, pmi.thread_id, u.name, m.timestamp IS NULL AS not_author FROM {pm_index} pmi";
+    $query .= " INNER JOIN {users} u ON pmi.uid = u.uid";
+    $query .= " LEFT JOIN {pm_message} m ON pmi.mid = m.mid AND pmi.uid = m.author";
+    $query .= " WHERE pmi.thread_id IN (". db_placeholders($select_threads) .")";
+    $query .= " ORDER BY not_author ASC, m.timestamp ASC";
+
+    $query_result = db_query($query, $select_threads);
+    // Array to maintain user uniqueness per-thread. 
+    $thread_users = array();
+    while ($item = db_fetch_object($query_result)) {
+      if (!is_array($result[$item->thread_id])) {
+        $result[$item->thread_id] = array();
+      }
+      if (!is_array($thread_users[$item->thread_id])) {
+        $thread_users[$item->thread_id] = array();
+      }
+      // Do we have this user already ?
+      if (!in_array($item->uid, $thread_users[$item->thread_id])) {
+        // Adding users in the same order we get them from DB
+        $result[$item->thread_id][] = $cache[$item->thread_id][] = $item;
+        // Add uid to the list of unique thread participants.
+        $thread_users[$item->thread_id][] = $item->uid;
+      }
+    }
+  }
+  return $result;
+}
+
+/**
+ * Return numbers of pages containing first unread message for every thread in
+ * $threads.
+ * In case whole thread is read, return number of the last page.
+ * 
+ * @param $uid
+ *  participant user ID
+ * @param $threads
+ *  array of thread last message ID keyed by thread ID.
+ * @return
+ *  array containing page numbers keyed by thread id
+ */
+function privatemsg_views_unread_page_count($uid, $threads) {
+  $thread_view = variable_get('privatemsg_views_ui_thread_view', 'privatemsg_thread');
+  $view = views_get_view($thread_view);
+  $view->set_display('default');
+  $use_pager = $view->display_handler->get_option('use_pager');
+  $pagenum = array();
+  if (!$use_pager) {
+    // All messages are on a single page.
+    foreach ($threads as $thread_id => $mid) {
+      $pagenum[$thread_id] = 0;
+    }
+    return $pagenum;
+  }
+  $per_page = $use_pager = $view->display_handler->get_option('items_per_page');
+  
+  // For every thread find first unread mid.
+  $unread_query  = "SELECT MIN(mid) AS minmid, thread_id FROM {pm_index}";
+  $unread_query .= " WHERE is_new = 1 AND uid = %d AND deleted = 0 AND thread_id IN (". db_placeholders(array_keys($threads)) .")";
+  $unread_query .= " GROUP BY thread_id";
+  $placeholders = array_merge(array($uid), array_keys($threads));
+  $result = db_query($unread_query, $placeholders);
+  $first_unread_mids = array();
+  while ($row = db_fetch_object($result)) {
+    $first_unread_mids[$row->thread_id] = $row->minmid;    
+  }
+  
+  // For every thread count number of results up to the first unread mid i.e.
+  // position.
+  // TODO: This probably could be optimized into single query somehow.
+  $counts = array();
+  foreach ($threads as $thread_id => $mid) {
+    if (empty($first_unread_mids[$thread_id])) {
+      // The thread has no unread messages. Get the last page.
+      $unread_mid = $mid;
+    }
+    else {
+      $unread_mid = $first_unread_mids[$thread_id];
+    }
+        
+    // Would need to switch to ">=" to support "newest messages first" mode.
+    $count_query  = "SELECT COUNT(1) FROM {pm_index} WHERE thread_id = %d AND uid = %d AND deleted = 0 AND mid <= %d";
+    $result_num = db_result(db_query($count_query, $thread_id, $uid, $unread_mid));
+
+    $pagenum[$thread_id] =  intval($result_num / $per_page);  
+  }
+  return $pagenum;
+}
+
+/**
+ * Count number of new private messages.
+ *
+ * This is to fix "a feature" (1) of Privatemsg where it presents number of
+ * updated privatemsg threads as number of new messages (e.g. "new messages"
+ * block, mailbox title).
+ *
+ * (1) http://drupal.org/node/751906
+ *
+ * We are not using Privatemsg query builder since we plan to get rid of it
+ * completely eventually.
+ */
+function _privatemsg_views_count_new_msg($uid) {
+  static $counts = array();
+
+  if (!isset($counts[$uid])) {
+    $query = array();
+    $query['select'] = array();
+    $query['where'] = array();
+    $query['groupby'] = array();
+
+    $query['select'][] = "SELECT COUNT(DISTINCT pmi.mid) AS msg_count FROM {pm_index} pmi";
+
+    if (module_exists('pm_block_user')) {
+      $query['select'][] = "LEFT JOIN {pm_message} m ON pmi.mid = m.mid";
+      $query['select'][] = "LEFT JOIN {pm_block_user} pmbu ON pmi.uid = pmbu.recipient AND m.author = pmbu.author";
+      $query['where'][] = "pmbu.recipient IS NULL";
+    }
+
+    $query['where'][] = "pmi.deleted = 0";
+    $query['where'][] = "pmi.is_new = 1";
+    $query['where'][] = "pmi.uid = %d";
+    $query_string  = implode(' ', $query['select']);
+    $query_string .= ' WHERE (' . implode(') AND (', $query['where']) . ')';
+    $counts[$uid] =  (int) db_result(db_query($query_string, $uid));
+  }
+  return $counts[$uid];
+}
+
+/**
+ * Implementation of hook_block().
+ * 
+ * Currently we implement "new messages" block, which properly counts new 
+ * messages opposed to "updated threads" counted by Privatemsg itself. 
+ */
+function privatemsg_views_block($op = 'list', $delta = 0, $edit = array()) {
+  if ('list' == $op) {
+    $blocks = array();
+    $blocks['privatemsg-views-new'] = array(
+      'info' => t('Privatemsg Views: new message indication with correct number of new messages'),
+      'cache' => BLOCK_NO_CACHE,
+    );
+
+    return $blocks;
+  }
+  elseif ('view' == $op) {
+    $block = array();
+    switch ($delta) {
+      case 'privatemsg-views-new':
+        $block = _privatemsg_views_block_new();
+        break;
+    }
+    return $block;
+  }
+}
+
+function _privatemsg_views_block_new() {
+  $block = array();
+
+  if (!privatemsg_user_access()) {
+    return $block;
+  }
+
+  $count = _privatemsg_views_count_new_msg($GLOBALS['user']->uid);  
+  if ($count) {
+    $block = array(
+      'subject' => format_plural($count, 'New message', 'New messages'),
+      'content' => theme('privatemsg_new_block', $count),
+    );
+    return $block;
+  }
+  return array();
+}
+
+//----------------------------------------------------------------
+// Theming
+
+/**
+ * Implementation of hook_theme().
+ */
+function privatemsg_views_theme() {
+  return array(
+    'privatemsg_views_participants' => array(
+      'arguments' => array('message' => NULL),
+    ),
+    'privatemsg_views_self' => array(
+      'arguments' => array(),     
+    ),
+    'privatemsg_views_message_action_links' => array(
+      'arguments' => array('links' => NULL, 'attributes' => NULL),     
+    ),
+  );
+}
+
+/**
+ * Theme a list of privatemsg action links.
+ * 
+ * This is a copy of theme_links(). We need our own function because it's not
+ * correct to use theme('links'..) for anything that is not array of node links.
+ */
+function theme_privatemsg_views_message_action_links($links, $attributes = array('class' => 'links')) {
+  global $language;
+  $output = '';
+
+  if (count($links) > 0) {
+    $output = '<ul'. drupal_attributes($attributes) .'>';
+
+    $num_links = count($links);
+    $i = 1;
+
+    foreach ($links as $key => $link) {
+      $class = $key;
+
+      // Add first, last and active classes to the list of links to help out themers.
+      if ($i == 1) {
+        $class .= ' first';
+      }
+      if ($i == $num_links) {
+        $class .= ' last';
+      }
+      if (isset($link['href']) && ($link['href'] == $_GET['q'] || ($link['href'] == '<front>' && drupal_is_front_page()))
+          && (empty($link['language']) || $link['language']->language == $language->language)) {
+        $class .= ' active';
+      }
+      $output .= '<li'. drupal_attributes(array('class' => $class)) .'>';
+
+      if (isset($link['href'])) {
+        // Pass in $link as $options, they share the same keys.
+        $output .= l($link['title'], $link['href'], $link);
+      }
+      else if (!empty($link['title'])) {
+        // Some links are actually not links, but we wrap these in <span> for adding title and class attributes
+        if (empty($link['html'])) {
+          $link['title'] = check_plain($link['title']);
+        }
+        $span_attributes = '';
+        if (isset($link['attributes'])) {
+          $span_attributes = drupal_attributes($link['attributes']);
+        }
+        $output .= '<span'. $span_attributes .'>'. $link['title'] .'</span>';
+      }
+
+      $i++;
+      $output .= "</li>\n";
+    }
+
+    $output .= '</ul>';
+  }
+
+  return $output;
+}
+
+/**
+ * Theme a list of private message thread participants.
+ * 
+ * @param $participants
+ *  Array of participant objects.
+ * @param $link
+ *  TRUE to output each participant username as a link to the user profile
+ * @param $replace
+ *  TRUE to output current user name differently using 
+ *  theme_privatemsg_views_self() function.
+ * @return
+ *  Themed list of participants.
+ */
+function theme_privatemsg_views_participants($participants, $link = TRUE, $replace = TRUE) {
+  global $user;
+  $items = array();
+  foreach ($participants as $participant) {
+    $uid = $participant->uid;   
+    if ($user->uid == $uid && $replace) {
+      $items[] = theme('privatemsg_views_self');
+    }
+    elseif ($link && user_access('access user profiles')) {
+      $account = user_load(array('uid' => $uid));
+      $items[] = theme('username', $account);
+    }
+    else {
+      $items[] = check_plain($participant->name);
+    }
+  }
+  return implode(', ', $items);
+}
+
+/**
+ * Theme current user in a participant list.
+ */
+function theme_privatemsg_views_self() {
+  return t('me');
+}
+
+

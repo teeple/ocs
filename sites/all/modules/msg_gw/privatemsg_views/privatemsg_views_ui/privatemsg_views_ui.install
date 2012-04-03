@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Install file for the privatemsg_views_ui module
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function privatemsg_views_ui_install() {
+  db_query("UPDATE {system} SET weight = 11 WHERE name = 'privatemsg_views_ui'");
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function privatemsg_views_ui_uninstall() {
+  variable_del('privatemsg_views_ui_mailbox_view');
+  variable_del('privatemsg_views_ui_thread_view');
+}

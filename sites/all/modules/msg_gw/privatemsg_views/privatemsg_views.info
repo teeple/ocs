@@ -1,0 +1,13 @@
+name = Privatemsg Views
+description = Integrates Views and Views Bulk Operations modules with Privatemsg
+package = Mail
+core = 6.x
+dependencies[] = privatemsg
+dependencies[] = views
+
+; Information added by drupal.org packaging script on 2011-06-25
+version = "6.x-1.0"
+core = "6.x"
+project = "privatemsg_views"
+datestamp = "1308966118"
+

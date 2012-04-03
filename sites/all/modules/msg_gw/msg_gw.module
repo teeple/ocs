@@ -1,0 +1,83 @@
+<?php
+// $Id$
+/**
+* @file
+* Module for tvchatg in any node to a user
+*/
+
+include_once dirname(__FILE__) .'/includes/tvchat.admin.inc';
+include_once dirname(__FILE__) .'/tvchat.inc';
+
+/**
+	help
+*/
+function tvchat_help( $path, $arg) {
+  if ( $path == "admin/help#tvchat") {
+	$txt = 'This module provides TV chat service.';
+    return '<p>'.t($txt).'</p>';
+  }
+}
+
+/**
+*	Provide admin menu
+*/
+function tvchat_menu() {
+  $items = array();
+
+  $items['admin/build/tvchat'] = array(
+    'title' => 'TV Chat',
+		'page callback' => 'tvchat_admin_page',
+		'access callback' => 'user_access',
+		'access arguments' => array( 'administer flags'),
+		'description' => 'TV Chat 서비스를 위한 기본 설정',
+	//	'file' => 'includes/tvchat.admin.inc',
+		'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['tvchat/form'] = array(
+    'title' => t('Bulk Messaging'),
+    'page callback' => 'tvchat_form',
+    'access arguments' => array('access content'),
+    'description' => t('Bulk Messaging Form'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['checkin_count'] = array(
+    'title' => 'AJAX Gateway',
+		'page callback' => 'tvchat_checkin_count',
+		'access arguments' => array('access content'),
+		'type' => MENU_CALLBACK,
+  );
+
+    return $items;
+}
+
+/**
+* hook_theme()
+*/
+function tvchat_theme() {
+  $module_path = drupal_get_path( 'module', 'tvchat');
+  drupal_add_js( $module_path.'/tvchat.js');
+
+  $opts = array( 'absolute' => TRUE);
+  $json_url = url( 'checkin_count', $opts);
+  drupal_add_js(
+    array( 'tvchat' =>
+	  array( 'checkin_count' => $json_url)), 'setting');
+
+  return array(
+	'tvchat_checkin_count' => array(	// tvchat checkin theme
+	  'arguments' => array( 'nid' => NULL, 'prompt' => NULL, 'count' => NULL),
+	),
+    'tvchat_admin_page' => array(
+	  'arguments' => array( 'flags' => NULL, 'default_flags' => NULL),
+	),
+  );
+}
+
+function tvchat_views_api() {
+  return array('api' => 2.0);
+}
+
+?>
+

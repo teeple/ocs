@@ -1,0 +1,5 @@
+;$Id$
+name = "Message Gateway"
+description = "Enterprise Message Gateway Module"
+core = 7.x
+php = 5.3

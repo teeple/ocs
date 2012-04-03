@@ -1,0 +1,7 @@
+core            = 7.x
+dependencies[]  = charts
+description     = "Use Google Charts 2 (Dynamic JS) on your site."
+name            = "Google Charts 2"
+package         = "Charts"
+files[]         = google_charts_2.inc
+files[]         = google_charts_2.module

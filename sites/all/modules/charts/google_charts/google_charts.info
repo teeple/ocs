@@ -1,0 +1,6 @@
+core            = 7.x
+dependencies[]  = charts
+description     = "Use Google Charts on your site."
+files[]         = google_charts.inc
+name            = "Google"
+package         = "Charts"

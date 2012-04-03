@@ -1,0 +1,60 @@
+<?php 
+	/**
+	* Implementation of hook_install(). 
+	*/
+
+	function ocs_customer_install() {
+		// Create tables. 
+	}
+	
+	/**
+	* Implementation of hook_uninstall().
+	*/
+	function ocs_customer_uninstall() {
+		// drop tables.
+		$host = "newbiz.uangel.com";
+		$uid = "root";
+		$pass = "root.123";
+		$db = "ocsdata";
+
+		$conn = mysql_connect($host,$uid,$pass);
+		mysql_select_db($db,$conn);
+
+		$str_sql  = "drop table 'customer'";
+
+       mysql_query($str_sql, $conn);
+	}	// end bd_filter_uninstall
+	
+	/**
+	* Implementation of hook_schema(). 
+	*/
+	function ocs_customer_schema() {
+		$host = "newbiz.uangel.com";
+		$uid = "root";
+		$pass = "root.123";
+		$db = "ocsdata";
+
+		$conn = mysql_connect($host,$uid,$pass);
+		mysql_select_db($db,$conn);
+
+        $str_sql  = "CREATE TABLE `customer` (
+						  `customerid` varchar(15) NOT NULL,
+						  `firstname` varchar(30) DEFAULT NULL,
+						  `lastname` varchar(30) DEFAULT NULL,
+						  `status` varchar(10) DEFAULT NULL,
+						  `ibSMS` varchar(2) DEFAULT NULL,
+						  `regdt` varchar(14) DEFAULT NULL,
+						  `birthdt` date DEFAULT NULL,
+						  `logid` varchar(30) DEFAULT NULL,
+						  `password` varchar(20) DEFAULT NULL,
+						  `email` varchar(50) DEFAULT NULL,
+						  `update_usr` varchar(10) DEFAULT NULL,
+						  `update_date` varchar(14) DEFAULT NULL,
+						  PRIMARY KEY (`customerid`)
+						) ENGINE=InnoDB DEFAULT CHARSET=utf8";
+
+       mysql_query($str_sql, $conn);
+       
+       
+
+	 }	// end ocs_schema_schema

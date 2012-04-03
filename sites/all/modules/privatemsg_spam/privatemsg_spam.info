@@ -1,0 +1,15 @@
+name = Privatemsg SPAM
+description = "Provides SPAM functionality for the Private Message module"
+package = Mail
+core = 7.x
+dependencies[] = privatemsg
+dependencies[] = rules
+files[] = privatemsg_spam.module
+files[] = privatemsg_spam.views.inc
+files[] = privatemsg_spam.rules.inc
+
+; Information added by drupal.org packaging script on 2011-06-19
+version = "7.x-1.2"
+core = "7.x"
+project = "privatemsg_spam"
+datestamp = "1308483419"

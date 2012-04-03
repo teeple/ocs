@@ -1,0 +1,12 @@
+name = Privatemsg Views UI
+description = Replaces parts of Privatemsg UI with a custom ones based on Views
+package = Mail
+core = 6.x
+dependencies[] = privatemsg_views
+dependencies[] = views_bulk_operations
+; Information added by drupal.org packaging script on 2011-06-25
+version = "6.x-1.0"
+core = "6.x"
+project = "privatemsg_views"
+datestamp = "1308966118"
+

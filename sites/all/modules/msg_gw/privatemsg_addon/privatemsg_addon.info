@@ -1,0 +1,13 @@
+name = Flag Service
+description = "Provides services for the Flag module"
+package = Services
+dependencies[] = services
+dependencies[] = privatemsg
+core = 7.x
+
+; Information added by drupal.org packaging script on 2011-12-08
+version = "7.x-3.x-dev"
+core = "7.x"
+project = "privatemsg_addon"
+datestamp = "1323303893"
+

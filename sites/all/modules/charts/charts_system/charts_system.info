@@ -1,0 +1,7 @@
+core            = 7.x
+dependencies[]  = charts
+description     = "Use Charts for Drupal administration"
+name            = "Charts System"
+package         = "Charts"
+files[]         = charts_system.module
+files[]         = charts_system.inc

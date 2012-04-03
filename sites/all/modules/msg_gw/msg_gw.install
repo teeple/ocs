@@ -1,0 +1,459 @@
+<?php
+// $Id$
+
+function tvchat_install()
+{
+  include_once( drupal_get_path('module', 'tvchat').'/tvchat.module');
+
+  $success = drupal_install_schema( 'tvchat');
+
+  if ( $success) {
+    // install a default flag
+		$config = array(
+			'max_checkin_day' => '10',
+			'checkin_count' => '1',
+			'favorite_count' => '5',
+			'comment_count' => '1',
+		);
+
+		_tvchat_update( $config);
+  }
+
+  if ( $success) {
+    drupal_set_message( st('TV Chat module installed tables successfully.'));
+  }
+  else {
+    drupal_set_message( st('The installation of TV Chat module failed.'), 'error');
+  }
+}
+
+function tvchat_uninstall()
+{
+  drupal_uninstall_schema( 'tvchat');
+  $result = db_query( "SELECT name from {variable} WHERE name LIKE 'tvchat_%'");
+  while( $row = db_fetch_object( $result)) {
+    variable_del( $row->name);
+  }
+
+  drupal_set_message( t('TV Chat has been uninstalled.'));
+}
+
+function tvchat_schema() {
+  $schema = array();
+
+  $schema['tvchat_config'] = array(
+    'fields' => array(
+	  'keystr' => array(
+	    'type' => 'varchar',
+		'length' => '24',
+		'not null' => TRUE,
+		'default' => '',
+	  ),
+	  'valuestr' => array(
+	    'type' => 'varchar',
+		'length' => '16',
+		'not null' => FALSE,
+		'default' => '',
+	  ),
+	),
+	'primary key' => array( 'keystr'),
+  );
+
+  $schema['tvchat_rating'] = array(
+    'fields' => array(
+			'date' => array(		// checkin date YYYYMMDD
+				'type' => 'varchar',
+				'length' => '10',
+				'not null' => TRUE,
+				'default' => '',
+			),
+			'content_id' => array(	// content id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),
+			'checkin_count' => array(		// checkin count
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),
+			'favorite_count' => array(		// favorite count
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),
+			'comment_count' => array(		// comment count
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),
+  ),
+    'unique keys' => array(
+	  'date_content_id' => array( 'date', 'content_id'),
+	),
+	'indexes' => array(
+	  'checkin_date_id' => array( 'date', 'content_id'),
+	),
+  );
+
+  $schema['tvchat_ranking_daily'] = array(
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => '24',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+			'entity_nid' => array(	// content id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'entity_uid' => array(	// user id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'entity_taxonomy' => array(	// points sum
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'reference' => array(	// reference field
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'points' => array(	// points sum
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),			
+      'target_date' => array(	// content id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),      
+      'target_date' => array(	// content id
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+       'timestamp' => array(	// timestamp
+				'type' => 'int',
+				'not null' => TRUE,
+			),
+		),
+    'unique keys' => array(
+	    'entity_type_id_target_date' => array( 'entity_type', 'entity_nid', 'entity_uid', 'target_date'),
+    ),
+	);
+
+  $schema['tvchat_ranking_weekly'] = array(
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => '24',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+			'entity_nid' => array(	// content id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'entity_uid' => array(	// user id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'entity_taxonomy' => array(	// points sum
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'reference' => array(	// reference field
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => FALSE,
+				'default' => 0,
+			),
+      'points' => array(	// points sum
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),			
+      'target_date' => array(	// content id
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+				'default' => 0,
+			),
+      'timestamp' => array(	// timestamp
+				'type' => 'int',
+				'not null' => TRUE,
+			),
+		),
+    'unique keys' => array(
+	    'entity_type_id_target_date' => array( 'entity_type', 'entity_nid', 'entity_uid', 'target_date'),
+    ),
+	);
+
+  $schema['apns_messages'] = array(
+    'fields' => array(
+      'pid' => array(
+        'type' => 'serial',
+        'length' => 9,
+        'unsigned' => TRUE,
+      ),
+        'sender' => array(	
+            'type' => 'int',
+            'length'    => 10,
+        ),
+        'receiver' => array(
+            'type' => 'int',
+            'length'    => 10,
+        ),
+        'device_token' => array(
+            'type' => 'varchar',
+            'unsigned' => TRUE,
+            'length'    => 64,
+        ),
+        'message' => array(	
+            'type' => 'varchar',
+            'length' => 255,
+        ),
+        'badge' => array(	
+            'type' => 'int',
+        ),
+        'delivery' => array(	
+            'type' => 'int',
+            'default' => 0,
+        ),
+        'status' => array(
+            'type' => 'varchar',
+            'length' => 20,
+            'default' => 'queued',
+        ),			
+        'created' => array(	
+            'type' => 'int',
+        ),
+        'modified' => array(	// timestamp
+            'type' => 'int',
+        ),
+    ),
+  );
+
+  $schema['c2dm_messages'] = array(
+    'fields' => array(
+      'pid' => array(
+        'type' => 'serial',
+        'length' => 9,
+        'unsigned' => TRUE,
+      ),
+        'sender' => array(	
+            'type' => 'int',
+            'length'    => 10,
+        ),
+        'receiver' => array(
+            'type' => 'int',
+            'length'    => 10,
+        ),
+        'device_token' => array(
+            'type' => 'varchar',
+            'unsigned' => TRUE,
+            'length'    => 64,
+        ),
+        'message' => array(	
+            'type' => 'varchar',
+            'length' => 255,
+        ),
+        'badge' => array(	
+            'type' => 'int',
+        ),
+        'delivery' => array(	
+            'type' => 'int',
+            'default' => 0,
+        ),
+        'status' => array(
+            'type' => 'varchar',
+            'length' => 20,
+            'default' => 'queued',
+        ),			
+        'created' => array(	
+            'type' => 'int',
+        ),
+        'modified' => array(	// timestamp
+            'type' => 'int',
+        ),
+    ),
+  );
+
+  $schema['telink_sms'] = array(
+    'description' => t('TODO: please describe this table!'),
+    'fields' => array(
+        'CMP_MSG_ID' => array(
+        'description' => t('TODO: please describe this field!'),
+        'type' => 'varchar',
+        'length' => '20',
+        'not null' => TRUE,
+      ),
+        'CMP_USR_ID' => array(
+                  'description' => t('TODO: please describe this field!'),
+                  'type' => 'varchar',
+                  'length' => '5',
+                  'not null' => TRUE,
+                  ),
+              'ODR_FG' => array(
+                  'description' => t('TODO: please describe this field!'),
+                  'type' => 'char',
+                  'length' => '1',
+                  'not null' => TRUE,
+                  ),
+              'SMS_GB' => array(
+                  'description' => t('TODO: please describe this field!'),
+                  'type' => 'char',
+                  'length' => '1',
+                  'not null' => TRUE,
+                  'default' => '1',
+                  ),
+              'USED_CD' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '3',
+                      'not null' => TRUE,
+                      'default' => '00',
+                      ),
+              'MSG_GB' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '1',
+                      'not null' => TRUE,
+                      ),
+              'WRT_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => FALSE,
+                      ),
+              'SND_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => TRUE,
+                      ),
+              'SND_PHN_ID' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '15',
+                      'not null' => FALSE,
+                      ),
+              'RCV_PHN_ID' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '15',
+                      'not null' => TRUE,
+                      ),
+              'CALLBACK' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '15',
+                      'not null' => FALSE,
+                      ),
+              'SND_MSG' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '200',
+                      'not null' => TRUE,
+                      ),
+              'CMP_SND_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => FALSE,
+                      ),
+              'CMP_RCV_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => FALSE,
+                      ),
+              'REG_SND_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => FALSE,
+                      ),
+              'REG_RCV_DTTM' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '14',
+                      'not null' => FALSE,
+                      ),
+              'EXPIRE_VAL' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'int',
+                      'not null' => TRUE,
+                      'default' => 0,
+                      ),
+              'SMS_ST' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'char',
+                      'length' => '1',
+                      'not null' => TRUE,
+                      ),
+              'RSLT_VAL' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'int',
+                      'not null' => FALSE,
+                      'default' => 99,
+                      ),
+              'RSRVD_ID' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '20',
+                      'not null' => FALSE,
+                      ),
+              'RSRVD_WD' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'varchar',
+                      'length' => '50',
+                      'not null' => FALSE,
+                      ),
+              'AUTH_NUMBER' => array(
+                      'description' => t('TODO: please describe this field!'),
+                      'type' => 'int',
+                      'not null' => FALSE,
+                      ),
+              ),
+              'primary key' => array('CMP_MSG_ID'),
+              'unique keys' => array(
+                      'CMP_MSG_ID_3' => array('CMP_MSG_ID')
+                      ),
+              'indexes' => array(
+                      'CMP_MSG_ID' => array('CMP_MSG_ID'),
+                      'CMP_MSG_ID_2' => array('CMP_MSG_ID'),
+                      'TELINK_SMS_MSG_IDX1' => array('SMS_ST'),
+                      'TELINK_SMS_MSG_IDX2' => array('SND_DTTM'),
+                      'TELINK_SMS_MSG_IDX3' => array('SMS_ST', 'SND_DTTM'),
+                      ),
+              );
+
+  return $schema;
+}
+

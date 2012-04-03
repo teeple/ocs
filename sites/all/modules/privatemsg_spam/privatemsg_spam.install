@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Install file for privatemsg_spam.module
+ */
+
+/**
+ * Implements hook_schema().
+ */
+
+
+/*
+function privatemsg_spam_schema() {
+  $schema = array();
+  $schema['pm_spam'] = array(
+    'description'       => '{pm_spam} holds blocked word for spam filtering',
+    'fields'        => array(
+      'word'    => array(
+        'description'   => 'Word',
+        'type'          => 'varchar',
+        'length'        => 255,
+        'not null'      => TRUE
+      )
+    ),
+    'primary key'     => array('word')
+  );
+
+  return $schema;
+}
+*/

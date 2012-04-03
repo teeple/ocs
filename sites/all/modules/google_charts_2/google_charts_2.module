@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * @author Cédric Cornez http://drupal.org/user/316578
+ * @file
+ * Use Google Charts 2 on your site.
+ */
+
+/**
+ * Implements hook_charts_info().
+ *
+ * Its a Charts module hook. It defines almost all aspects
+ * of a chart provider, like its name, what types of charts
+ * it can perform and what are the restrictions.
+ */
+function google_charts_2_charts_info() {
+    return array(
+        'google_charts_2' => array(
+            'file' => drupal_get_path('module', 'google_charts_2') . '/google_charts_2.inc',
+            'name' => t('Google Chart 2'),
+            'render' => '_google_charts_2_render',
+            'types' => array('line2D', 'hbar2D', 'hbar2Ds',
+                'pie2D', 'pie3D', 'vbar2D', 'vbar2Ds'/* , 'scatter' */),
+        ),
+    );
+}
+
+/**
+ * Implements hook_chart_types().
+ */
+function google_charts_2_chart_types() {
+    return array(
+//        'line2D' => t('Line 2D'),
+//        'hbar2D' => t('Horizontal Bar 2D'),
+//        'vbar2D' => t('Vertical Bar 2D'),
+        'hbar2Ds' => t('Horizontal Bar 2D (Stacked)'),
+        'vbar2Ds' => t('Vertical Bar 2D (Stacked)'),
+//        'pie2D' => t('Pie 2D'),
+//        'pie3D' => t('Pie 3D'),
+    );
+}

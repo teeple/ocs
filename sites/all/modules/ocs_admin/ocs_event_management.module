@@ -1,0 +1,17 @@
+<?php
+
+	function ocs_event_management_menu() {
+	  $items = array();
+	
+	  $items['ocs_event_management'] = array(
+	    'title' => 'Event Management',
+	    'page callback' => 'ocs_event_management_intro',
+	    'access callback' => TRUE,
+	    'expanded' => TRUE,
+	  );
+	}
+
+	function ocs_event_management_intro() {
+	  $markup = t('The event management forms.');
+	  return $markup;
+	}

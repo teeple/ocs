@@ -1,0 +1,7 @@
+core            = "7.x"
+dependencies[]  = charts
+dependencies[]  = open_flash_chart_api
+description     = "Use Open Flash Charts on your site."
+files[]         = openflashchart.inc
+name            = "Open Flash Chart"
+package         = "Charts"

@@ -1,0 +1,52 @@
+
+/* Private message mailbox */
+
+a.privatemsg-thread-link .privatemsg-subject {
+  font-weight: bold;
+}
+
+a.privatemsg-count-new-0 .privatemsg-subject {
+  font-weight: normal;
+}
+
+
+.privatemsg-subject {
+}
+
+.privatemsg-teaser {
+}
+
+.privatemsg-thread-marker {
+}
+
+
+/* Private message thread */
+
+.privatemsg-views-message {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid gray;
+}
+
+.privatemsg-views-message-bottom {
+  clear:both;
+}
+
+.privatemsg-thread-left {
+  float: left;
+  display: inline;
+  width: 30%;
+}
+
+.privatemsg-thread-right {
+  float: left;
+  clear: right;
+  display: inline;
+  width: 70%;
+}
+
+#edit-uid,
+#edit-uid-wrapper,
+.views-widget {
+  display: inline;  
+}

@@ -1,0 +1,20 @@
+name = OCS Customer Data
+description = OCS Customer Data Insert
+version = "7.x-1.0"
+core = 7.x
+package = OCS Admin
+
+dependencies[] = migrate
+dependencies[] = migrate_extras
+dependencies[] = profile2
+; only for the 'Date'-field 'Birthday':
+
+dependencies[] = date
+dependencies[] = date_api
+dependencies[] = date_migrate
+
+files[] = ocs_customer_insert.migrate.inc
+
+;TIP: to show the migrate user interface delete the ";" at the beginning of the next line;
+
+dependencies[] = migrate_ui
