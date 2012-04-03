@@ -1,7 +1,6 @@
 <?php
 
-global $form_var;
-$form_var = array();
+module_load_include( 'inc', 'ocs_admin', 'ocs_account');
 
 /***
 * Implementation of hook_menu
@@ -9,9 +8,9 @@ $form_var = array();
 function ocs_admin_menu() {
     $items['helloworld'] = array(
         'title' => 'Hello World',
-        'page callback' => 'helloworld',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_account_add_form'),
         'access arguments' => array('access content'),
-        'file' => 'ocs_account.inc',
     );
 
     $items['helloworld/%ctools_js/form'] = array(
@@ -62,7 +61,7 @@ function helloworld() {
     $block['account'] = module_invoke( 'views', 'block_view', 'ocs_account-block2');
     $block['product'] = module_invoke( 'views', 'block_view', 'ocs_product-block');
 
-    $form = drupal_get_form( 'ocs_account_form');
+    $form = drupal_get_form( 'ocs_account_add_form');
     $output = drupal_render( $form);
 
     return array(
@@ -91,101 +90,9 @@ function helloworld() {
     );
 }
 
-function ocs_account_add_form_post_render($markup, $element)
-{
-    $block = module_invoke( 'views', 'block_view', 'ocs_account-block');
-    $markup = str_replace( '<div id="customer_block"></div>', 
-        drupal_render($block['content']), $markup);
-    return $markup;
-}
-
-function ocs_account_add() 
-{
-    $form = drupal_get_form( 'ocs_account_form');
-    $output = '<div id="ocs_account_add_form">' .  drupal_render( $form) . '</div>';
-
-    return $output;
-
-        /*
-        'kpr account' => array( 
-            '#markup' => kpr( $block['account']['content'], TRUE),
-            ),
-            */
-}
-
-
-function ocs_account_form( $form, &$form_state, $arg = NULL) 
-{
-    $form['customer'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Customer'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-    );
-
-    $form['customer']['id'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Customer ID'),
-        '#default_value' => $arg['customer_id'],
-    );
-
-    $form['customer']['name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Customer Name'),
-        '#default_value' => $arg['customer_name'],
-    );
-
-    $form['product'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Product'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-    );
-
-    $form['product']['id'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Product ID'),
-        '#default_value' => $arg['product_id'],
-    );
-
-    $form['product']['name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Product Name'),
-        '#default_value' => $arg['product_name'],
-    );
-
-    $form['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Submit'),
-    );
-
-    return $form;
-}
-
-function ocs_account_select( $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
-{
-    global $form_var;
-
-    $output = 'REPLACED'. kpr( $form_var, TRUE);
-
-    if ( isset($id)) $form_var[ $type . '_id'] = $id;
-    if ( isset($name)) $form_var[ $type . '_name'] = $name;
-
-    $form = drupal_get_form( 'ocs_account_form', $form_var);
-
-    $output .= '<div id="ocs_account_add_form">' . drupal_render( $form) . '</div>';
-    if ( $js) {
-        ctools_include('ajax');
-        $commands = array();
-        $commands[] = ajax_command_replace( '#ocs_account_add_form', $output);
-        print ajax_render( $commands);
-        exit;
-    }
-    else {
-        return $output;
-    }
-}
-
+/*
+** tried to implement modal popup to select customer or product
+*/
 function ocs_admin_modal( $js = NULL)
 {
     if ( $js) {
@@ -234,68 +141,3 @@ function ocs_admin_views_api() {
       return array('api' => 3.0);
 }
 
-
-/*
-**  Block APIs : hook_block_info()
-//*/
-//function ocs_admin_block_info() {
-//    $blocks['ocs_admin_command_form'] = array(
-//        'info' => t('OCS Admin command block'),
-//        'status' => TRUE,
-//        'region' => 'Content',
-//        'cache' => DRUPAL_CACHE_PER_ROLE,   // default
-//        'visibility' => BLOCK_VISIBILITY_LISTED,
-//        'pages' => 'ocs-account',
-//    );
-//
-//    return $blocks;
-//}
-//
-///*
-//**  hook_block_view()
-//*/
-//function ocs_admin_block_view($delta = '') {
-//    switch ($delta) {
-//        case 'ocs_admin_command_form':
-//            $block['subjst'] = t('COMMAND Pannel');
-////            $block['content'] = ocs_admin_command_form_block();
-//            $block['content'] = t('<a href="@url">Add</a>', array( '@url' => url('ocs_account/form/add')));
-//       break;
-//    }
-//
-//    return $block;
-//}
-//
-//function ocs_admin_command_form_block() {
-//    $form['add'] = array(
-//        '#type' => 'submit',
-//        '#value' => 'Add',
-//        '#process' => array( 'ocs_admin_command_form_add_submit'),
-//    );
-//    $form['del'] = array(
-//        '#type' => 'submit',
-//        '#value' => 'Delete',
-//        '#submit' => array( 'ocs_admin_command_form_submit'),
-//    );
-//    return $form;
-//}
-//
-//// submit handler for command form
-//function ocs_admin_command_form_add_submit( $form, &$form_state) {
-//    drupal_set_message(t('submitted'));
-//}
-//
-//function ocs_admin_command_form_submit( $form, &$form_state) {
-//    drupal_set_message(t('submitted'));
-//}
-//
-//
-//function ocs_admin_block_list_alter( &$blocks) {
-//    foreach( $blocks as $bid => $block) {
-//        if (($block->module == 'search') && ($block->delta == 'form')) {
-//            unset( $blocks[$bid]);
-//            $blocks[$bid] = $block;
-//            break;
-//        }
-//    }
-//}
