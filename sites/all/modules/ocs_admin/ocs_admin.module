@@ -21,18 +21,18 @@ function ocs_admin_menu() {
         'type' => MENU_CALLBACK,
     );
 
-    $items['ocs_admin/%ctools_js/select/%/%/%'] = array(
-        'title' => 'Callback for adding a new account',
-        'page callback' => 'ocs_account_select',
-        'page arguments' => array(1,3,4,5),
-        'access arguments' => array('access content'),
-        'type' => MENU_CALLBACK,
-    );
-
     $items['ocs_admin/account/add/%'] = array(
         'title' => 'Add New Account',
         'page callback' => 'ocs_admin_account_add',
         'page arguments' => array(3),
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+
+    $items['ocs_admin/account/add/%/%ctools_js/%/%/%'] = array(
+        'title' => 'Callback for adding a new account',
+        'page callback' => 'ocs_account_select',
+        'page arguments' => array(3,4,5,6,7),     // _panel/nojs/type/id/name i.e. customer/1/tom
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
     );

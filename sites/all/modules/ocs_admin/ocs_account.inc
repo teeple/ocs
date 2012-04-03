@@ -85,14 +85,15 @@ function ocs_admin_account_add_form_submit( $form, &$form_state)
 function ocs_admin_account_select_row( $args)
 {
     ctools_include('ajax'); // Module  include the dependence it needs for ajax.
-    $link = ctools_ajax_text_button( t('select'), "ocs_admin/nojs/select/".$args, t('select'));
+    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/".$args, t('select'));
     return $link;
 }
 
 /*
 **  ajax select button in account & product table
+    impl: _panel, _popup, and etc
 */
-function ocs_admin_account_select( $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
+function ocs_account_select( $impl, $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
 {
     if ( ! isset( $_SESSION['account_select'])) {
         $_SESSION['account_select'] = array();
@@ -102,7 +103,9 @@ function ocs_admin_account_select( $js = NULL, $type = 'customer', $id = NULL, $
     $_SESSION['account_select'][$type . '_id'] = $id;
     $_SESSION['account_select'][$type . '_name'] = $name;
 
-    $form = drupal_get_form( 'ocs_admin_account_add_form', $_SESSION['account_select']);
+    dsm( $_SESSION['account_select']);
+
+    $form = drupal_get_form( 'ocs_admin_account_add_form'. $impl, $_SESSION['account_select']);
     $output = '<div id="ocs_admin_account_add_form">' . drupal_render( $form) . '</div>';
     if ( $js) {
         ctools_include('ajax');
@@ -118,56 +121,38 @@ function ocs_admin_account_select( $js = NULL, $type = 'customer', $id = NULL, $
 
 
 /*
-** add form: two column version
+** add form: panel  version
 */
-function ocs_admin_account_add_form( $form, &$form_state)
+function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
 {
-    $form['customer'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Customer'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
+    dsm( $arg);
+
+    $rows = array(
+        array(
+            array( 'data' => 'Customer', 'rowspan' => 2),
+            'ID', 
+            ($arg && $arg['customer_id']) ? $arg['customer_id'] : 'Unknown'
+        ),
+        array( 'Name', 
+            ($arg && $arg['customer_name']) ? $arg['customer_name'] : 'Unknown'),
+        array(
+            array( 'data' => 'Product', 'rowspan' => 2),
+            'ID', 
+            ($arg && $arg['product_id']) ? $arg['product_id'] : 'Unknown'
+        ),
+        array( 'Name', 
+            ($arg && $arg['product_name']) ? $arg['product_name'] : 'Unknown'),
     );
 
-    $form['customer']['customer_id'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Customer ID'),
-        '#size' => 30,
-    );
-
-    $form['customer']['customer_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Customer Name'),
-        '#size' => 30,
-    );
-
-    $form['product'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Product'),
-        '#collapsible' => TRUE,
-        '#collapsed' => FALSE,
-    );
-
-    $form['product']['id'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Product ID'),
-        '#size' => 30,
-    );
-
-    $form['product']['name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Product Name'),
-        '#size' => 30,
+    $form['table'] = array(
+        '#type' => 'markup',
+        '#markup' => theme( 'table', array( 'rows' => $rows)),
     );
 
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Submit'),
     );
-
-    if ( !empty( $form_state['values']['customer_name'])) {
-        $form['customer']['list'] = ocs_admin_account_get_table( $form_state['values']['customer_name']);
-    }
 
     return $form;
 }
@@ -242,9 +227,31 @@ function ocs_admin_account_add_form_innertable( $form, &$form_state)
 
     $form['product']['product_list'] = ocs_admin_get_table_form( 'product');
 
+    ////////// account key : MSISDN
+
+    $form['account'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Account'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+    );
+
+    $form['account']['account_key'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Account Key'),
+        '#ajax' => array(
+            'callback' => 'ocs_admin_db_account_callback',
+            'wrapper' => 'replace_account_list_div',
+            'keypress' => TRUE,
+        ),
+     );
+
+    $form['account']['account_list'] = ocs_admin_get_table_form( 'account');
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Submit'),
+        '#submit' => array( 'ocs_admin_account_add_submit'),
     );
 
     if ( !empty( $form_state['values']['customer_name']) || ! empty( $form_state['values']['customer_id'])) {
@@ -261,6 +268,13 @@ function ocs_admin_account_add_form_innertable( $form, &$form_state)
             'id' => $form_state['values']['product_id'],
             );
         $form['product']['product_list'] = ocs_admin_get_table_form( 'product', $arg);
+    }
+
+    if ( !empty( $form_state['values']['account_key'])) {
+        $arg = array(
+            'key' => $form_state['values']['account_key'],
+            );
+        $form['account']['account_list'] = ocs_admin_get_table_form( 'account', $arg);
     }
 
     return $form;
@@ -284,7 +298,7 @@ function ocs_admin_get_table_form( $type, $arg = NULL)
             '#suffix' => '</div>',
         );
     }
-    else {
+    else if ( $type == 'product') {
          $header = array(
             'product_id' => 'ID',
             'product_name' => 'Name',
@@ -300,8 +314,23 @@ function ocs_admin_get_table_form( $type, $arg = NULL)
             '#suffix' => '</div>',
         );
    }
+   else if ( $type == 'account') {
+         $header = array(
+            'account_key' => 'Key',
+        );
+        $records = ocs_admin_get_account( $arg);
 
-   return $form;
+        $form = array(
+            '#type' => 'tableselect',
+            '#header' => $header,
+            '#options' => $records,
+            '#empty' => t('No content available.'),
+            '#prefix' => '<div id="replace_account_list_div">',
+            '#suffix' => '</div>',
+        );   
+    }
+
+    return $form;
 }
 
 function ocs_admin_get_customer( $arg = NULL)
@@ -358,6 +387,33 @@ function ocs_admin_get_product( $arg = NULL)
     return $records;
 }
 
+function ocs_admin_get_account( $arg = NULL)
+{
+    db_set_active('ocsdb');
+    
+    $header = array( 'customer_id', 'customer_name');
+    $query = db_select( 'ocs_customer', 'c');
+    if ( isset( $arg['name'])) {
+        $query->condition( 'c.customer_name', '%'.$arg['name'].'%', 'like');
+    }
+    if ( isset( $arg['id'])) {
+        $query->condition( 'c.customer_id', $arg['id'], '=');
+    }
+    $query
+        ->fields( 'c', $header)
+        ->range( 0, 10);
+
+    $result = $query->execute();
+    $records = array();
+    while( $record = $result->fetchAssoc()) {
+        $records[$record['customer_id']] = $record;
+    }
+
+    db_set_active('default');
+
+    return $records;
+}
+
 
 /*
 ** ajax callback 
@@ -370,4 +426,17 @@ function ocs_admin_db_customer_callback( $form, $form_state)
 function ocs_admin_db_product_callback( $form, $form_state)
 {
     return $form['product']['product_list'];
+}
+
+function ocs_admin_db_account_callback( $form, $form_state)
+{
+    return $form['account']['account_list'];
+}
+
+/*
+** submit 'account/add'
+*/
+function ocs_admin_account_add_submit( $form, &$form_state)
+{
+    dsm( $form_state['values']);
 }
