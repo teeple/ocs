@@ -174,83 +174,11 @@ function ocs_admin_views_data() {
         ),
     );
 
-    // Customer Table edit by charles 2012-03-29
+    // ocs_customer_view Table edit by charles 2012-04-04
     // Start
-    $data['customer']['table']['name'] = 'ocsdata.customer';
-    $data['customer']['table']['group'] = t('Customer');
-    $data['customer']['table']['base'] = array(
-        'field' => 'customerid',
-        'title' => t('Customer Table'),
-        'help' => t('View records of Cusomter Table'),
-        'database' => 'ocsdb',
-        'weight' => -10,
-    );
-
-    $data['customer']['customerid'] = array(
-        'title' => t('Customer ID'),
-        'help' => t('Customer unique ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
-
-    $data['customer']['firstname'] = array(
-        'title' => t('First Name'),
-        'help' => t('Customer First Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
-
-    $data['customer']['lastname'] = array(
-        'title' => t('Last Name'),
-        'help' => t('Customer Last Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
-    
-    $data['customer']['status'] = array(
-        'title' => t('Status'),
-        'help' => t('Customer Status'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
-
-    // Customer Table edit by charles 2012-03-29
-    // Start
-    $data['test_view']['table']['name'] = 'ocsdata.test_view';
-    $data['test_view']['table']['group'] = t('Customer');
-    $data['test_view']['table']['base'] = array(
+    $data['ocs_customer_view']['table']['name'] = 'ocsdata.ocs_customer_view';
+    $data['ocs_customer_view']['table']['group'] = t('Customer');
+    $data['ocs_customer_view']['table']['base'] = array(
         'field' => 'customer_id',
         'title' => t('Customer View'),
         'help' => t('View records of Cusomter Table'),
@@ -258,9 +186,54 @@ function ocs_admin_views_data() {
         'weight' => -10,
     );
 
-    $data['test_view']['customer_id'] = array(
+    $data['ocs_customer_view']['customer_id'] = array(
         'title' => t('Customer ID'),
         'help' => t('Customer unique ID'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_customer_view']['customer_name'] = array(
+        'title' => t('Customer Name'),
+        'help' => t('Customer Name'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_customer_view']['code_name'] = array(
+        'title' => t('Customer Type'),
+        'help' => t('Customer Type (ocs_code_master : B302)'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_customer_view']['date_register'] = array(
+        'title' => t('Register Date'),
+        'help' => t('Register Date'),
         'field' => array(
             'handler' => 'views_handler_field',
             'click sortable' => TRUE,
@@ -345,21 +318,36 @@ function ocs_admin_views_data() {
         ),
     );
 
-    // Customer Table edit by charles 2012-03-29
-    // Start
-    $data['test_view']['table']['name'] = 'ocsdata.test_view';
-    $data['test_view']['table']['group'] = t('Customer');
-    $data['test_view']['table']['base'] = array(
-        'field' => 'customer_id',
-        'title' => t('Customer View'),
-        'help' => t('View records of Cusomter Table'),
+    // ocs_account_key_view edit by charles 2012-04-04
+    // Start ocs_account_key_view
+    $data['ocs_account_key_view']['table']['name'] = 'ocsdata.ocs_account_key_view';
+    $data['ocs_account_key_view']['table']['group'] = t('OCS Account Key View');
+    $data['ocs_account_key_view']['table']['base'] = array(
+        'field' => 'account_key',
+        'title' => t('OCS Account Key'),
+        'help' => t('Account Resource List'),
         'database' => 'ocsdb',
         'weight' => -10,
     );
 
-    $data['test_view']['customer_id'] = array(
-        'title' => t('Customer ID'),
-        'help' => t('Customer unique ID'),
+    $data['ocs_account_key_view']['account_key'] = array(
+        'title' => t('OCS Account key'),
+        'help' => t('OCS Account key'),
+        'field' => array(
+            'handler' => 'views_handler_field_numeric',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_account_key_view']['account_key_type'] = array(
+        'title' => t('OCS Account Key Type'),
+        'help' => t('OCS Account Key Type'),
         'field' => array(
             'handler' => 'views_handler_field',
             'click sortable' => TRUE,
@@ -370,7 +358,48 @@ function ocs_admin_views_data() {
         'sort' => array( 
             'handler' => 'views_handler_sort',
         ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
     );
+
+    $data['ocs_account_key_view']['account_key_type_name'] = array(
+        'title' => t('OCS Account Key Type Name'),
+        'help' => t('OCS Account Key Type Name'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_account_key_view']['sale_flag'] = array(
+        'title' => t('OCS Account Key Status'),
+        'help' => t('OCS Account Key Status'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+    // End ocs_account_key_view
+
 
     return $data;
 }

@@ -1,6 +1,0 @@
-name = OCS Customer
-description = OCS customer table create
-core = 7.x
-version = 7.0
-package = OCS Admin
-files[] = ocs_customer.installl
