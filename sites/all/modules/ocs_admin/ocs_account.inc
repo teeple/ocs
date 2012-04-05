@@ -9,58 +9,21 @@
     ocs_admin_account_add_form_panel : panel version
     ocs_admin_account_add_form_innertable : inner table version
 */
-function ocs_admin_account_add( $impl = NULL, $arg = NULL) 
+function ocs_admin_account_add( $impl = NULL, $arg = NULL, $init = TRUE) 
 {
-    $form = drupal_get_form( 'ocs_admin_account_add_form'.$impl , $arg);
+    if ( $arg ) {
+        foreach( $arg as $key => $value) {
+            $_SESSION['ocs_admin_account_add'][$key] = $value;
+        }
+    }
+    else {
+        $_SESSION['ocs_admin_account_add'] = array();
+    }
+
+    $form = drupal_get_form( 'ocs_admin_account_add_form'.$impl , $_SESSION['ocs_admin_account_add']);
     $output = '<div id="ocs_admin_account_add_form_div">' . drupal_render( $form) . '</div>';
 
     return $output;
-}
-
-function ocs_admin_account_customer_form_popup( $arg = NULL)
-{
-    // Include the CTools tools that we need.
-    ctools_include('ajax');
-    ctools_include('modal');
-
-    // Add CTools' javascript to the page.
-    ctools_modal_add_js();
-
-    $form['customer'] = ocs_admin_account_customer_form_panel( $arg);
-
-    $form['customer']['list'] = array(
-        '#type' => 'markup',
-        '#markup' => ctools_modal_text_button(t('Search'), 'helloworld/nojs/form', t('Search customer')),
-        );
-
-    return $form;
-}
-
-function ocs_admin_account_product_form_popup( $arg = NULL)
-{
-    return  ocs_admin_account_product_form_panel( $arg);
-}
-
-/*
-** POP up version
-*/
-function ocs_admin_account_add_form_popup( $form, &$form_state, $arg = NULL) 
-{
-    $form['customer'] = ocs_admin_account_customer_form_popup( arg);
-    $form['product'] = ocs_admin_account_product_form_popup( arg);
-
-    $form['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Submit'),
-        '#submit' => array( 'ocs_admin_account_add_form_submit'),
-    );
-
-    return $form;
-}
-
-function ocs_admin_account_add_form_submit( $form, &$form_state) 
-{
-    kpr( $form_state, TRUE);
 }
 
 
@@ -100,15 +63,8 @@ function ocs_account_select( $impl, $js = NULL, $type = 'customer', $id = NULL, 
 }
 
 
-/*
-** add form: panel  version
-*/
-function ocs_admin_account_customer_form_panel( $arg)
-{
-   $customer_id = $arg ? $arg['customer_id'] : 'Unknown';
-   $customer_name = $arg ? $arg['customer_name'] : 'Unknown';
 
-   /* table
+   /* table example
    $header = array(
         array(
             'data' => 'Attributes',
@@ -137,59 +93,8 @@ function ocs_admin_account_customer_form_panel( $arg)
         '#prefix' => '<div id="ocs_admin_account_customer_form_div">',
         '#suffix' => '</div>',
     );
-
-    $form['table']['customer_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $customer_id
-        );
-    
-    $form['table']['customer_name'] = array(
-        '#type' => 'hidden',
-        '#value' => $customer_name
-        );
-    */
-    return $form;
-}
-
-function ocs_admin_account_product_form_panel( $arg)
-{
-    $product_id = $arg ? $arg['product_id'] : 'Unknown';
-    $product_name = $arg ? $arg['product_name'] : 'Unknown';
-
-    /* table format
-    $rows = array(
-        array(
-            array( 'data' => 'Product', 'rowspan' => 2, 'width' => 100,),
-            array( 'data' => 'ID', 'width' => 100), 
-            $product_id,
-        ),
-        array( 'Name', 
-            $product_name,
-        ),
-    );
-
-    $form['table'] = array(
-        '#type' => 'markup',
-        '#markup' => theme( 'table', array( 'rows' => $rows)),
-        '#prefix' => '<div id="ocs_admin_account_product_form_div">',
-        '#suffix' => '</div>',
-    );
-
-    $form['table']['product_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $product_id
-        );
-    
-    $form['table']['product_name'] = array(
-        '#type' => 'hidden',
-        '#value' => $product_name
-        );
     */
 
-    return $form;
-}
-
- 
 function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
 {
     $form = array();
@@ -206,13 +111,16 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
     $form['customer']['customer_id'] = array(
         '#type' => 'textfield',
         '#title' => t('Customer ID'),
-        '#default_value' => $arg['customer_id'],
+        '#default_value' => isset($arg['customer_id']) ? $arg['customer_id'] : '',
+        '#required' => TRUE,
+        '#description' => t('<a href="#@link">Select a customer</a> to add an account', 
+            array( '@link' => 'select_customer')),
     );
 
     $form['customer']['customer_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Customer Name'),
-        '#default_value' => $arg['customer_name'],
+        '#type' => 'item',
+        '#title' => t('Name : @name', 
+            array('@name' => isset($arg['customer_name']) ? $arg['customer_name'] : '')),
     );
 
     $form['product'] = array(
@@ -227,13 +135,16 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
     $form['product']['product_id'] = array(
         '#type' => 'textfield',
         '#title' => t('Product ID'),
-        '#default_value' => $arg['product_id'],
+        '#default_value' => isset($arg['product_id']) ? $arg['product_id'] : '',
+        '#required' => TRUE,
+        '#description' => t('<a href="#@link">Select a product</a> to assign', 
+            array( '@link' => 'select_product')),
     );
 
     $form['product']['product_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Product Name'),
-        '#default_value' => $arg['product_name'],
+        '#type' => 'item',
+        '#title' => t('Name : @name', 
+            array('@name' => isset($arg['product_name']) ? $arg['product_name'] : '')),
     );
 
     $form['submit'] = array(
@@ -248,17 +159,27 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
         '#submit' => array('ocs_admin_account_add_form_panel_submit'),
     );
 
-    if ( isset( $form_state['values'])) {
-        dsm( 'form state: '. kpr( $form_state));
-    }
+//    dpm( $form_state, 'form state: ');
+//    ddebug_backtrace();
 
     return $form;
 }
 
+function ocs_admin_account_add_form_panel_validate( $form, &$form_state)
+{
+    dpm( $form_state, 'validate: ');
+}
+
 function ocs_admin_account_add_form_panel_submit( $form, &$form_state)
 {
-    dsm( $form_state);
-    $form['redirect'] = url('ocs-account');
+    $form_state['redirect'] = 'ocs-account';
+    dpm( $form_state, 'submit: ');
+
+    if ( $form_state['values']['op'] == 'Confirm') {
+        // save to DB
+        dsm( 'confirmed: ');
+        ocs_admin_account_add_db( $form_state['values']);
+    }
 }
 
 
@@ -266,6 +187,38 @@ function ocs_admin_form_ocs_admin_account_add_form_panel_alter( &$form, &$form_s
 {
     $form['#action'] = url('ocs_admin/account/add/_panel');
 }
+
+/*
+** save to DB
+*/
+function ocs_admin_account_add_db( $values) 
+{
+    db_set_active('ocsdb');
+
+    $txn = db_transaction();
+
+    $fields = array(
+        'customer_id' => $values['customer_id'],
+        'product_id' => $values['product_id'],
+    );
+
+    try {
+        $id = db_insert('ocs_account')
+            ->fields( $fields)
+            ->execute();
+        dpm( $id, 'db insert');
+
+        return $id;
+    }
+    catch( Exception $e) {
+        $txn->rollback();
+        // Log the exception to watchdog.
+        watchdog_exception('type', $e);
+        dpm( $e, 'db insert failed');
+    }
+
+    db_set_active('default');
+ }
 
 /* 
 ** build form for adding account
@@ -549,3 +502,55 @@ function ocs_admin_account_add_submit( $form, &$form_state)
 {
     dsm( $form_state['values']);
 }
+
+/***************************************************
+** not used
+*/
+
+function ocs_admin_account_customer_form_popup( $arg = NULL)
+{
+    // Include the CTools tools that we need.
+    ctools_include('ajax');
+    ctools_include('modal');
+
+    // Add CTools' javascript to the page.
+    ctools_modal_add_js();
+
+    $form['customer'] = ocs_admin_account_customer_form_panel( $arg);
+
+    $form['customer']['list'] = array(
+        '#type' => 'markup',
+        '#markup' => ctools_modal_text_button(t('Search'), 'helloworld/nojs/form', t('Search customer')),
+        );
+
+    return $form;
+}
+
+function ocs_admin_account_product_form_popup( $arg = NULL)
+{
+    return  ocs_admin_account_product_form_panel( $arg);
+}
+
+/*
+** POP up version
+*/
+function ocs_admin_account_add_form_popup( $form, &$form_state, $arg = NULL) 
+{
+    $form['customer'] = ocs_admin_account_customer_form_popup( arg);
+    $form['product'] = ocs_admin_account_product_form_popup( arg);
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Submit'),
+        '#submit' => array( 'ocs_admin_account_add_form_submit'),
+    );
+
+    return $form;
+}
+
+function ocs_admin_account_add_form_submit( $form, &$form_state) 
+{
+    kpr( $form_state, TRUE);
+}
+
+

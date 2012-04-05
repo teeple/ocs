@@ -363,7 +363,7 @@ function ocs_admin_views_data() {
         ),
     );
 
-    $data['ocs_account_key_view']['account_key_type_name'] = array(
+    $data['ocs_account_key_view']['account_key_name'] = array(
         'title' => t('OCS Account Key Type Name'),
         'help' => t('OCS Account Key Type Name'),
         'field' => array(
@@ -381,7 +381,7 @@ function ocs_admin_views_data() {
         ),
     );
 
-    $data['ocs_account_key_view']['sale_flag'] = array(
+    $data['ocs_account_key_view']['sales_flag'] = array(
         'title' => t('OCS Account Key Status'),
         'help' => t('OCS Account Key Status'),
         'field' => array(
