@@ -178,7 +178,7 @@ function ocs_admin_account_add_form_panel_submit( $form, &$form_state)
     if ( $form_state['values']['op'] == 'Confirm') {
         // save to DB
         dsm( 'confirmed: ');
-        ocs_admin_account_add_db( $form_state['values']);
+        ocs_admin_db_account_add( $form_state['values']);
     }
 }
 
@@ -191,7 +191,7 @@ function ocs_admin_form_ocs_admin_account_add_form_panel_alter( &$form, &$form_s
 /*
 ** save to DB
 */
-function ocs_admin_account_add_db( $values) 
+function ocs_admin_db_account_add( $values) 
 {
     db_set_active('ocsdb');
 

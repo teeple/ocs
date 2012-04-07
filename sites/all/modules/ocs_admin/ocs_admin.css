@@ -1,0 +1,17 @@
+.menu-operations {
+      width: 100px;
+}
+
+.menu-enabled {
+      width: 70px;
+}
+
+.menu-enabled input {
+      margin-left:25px;
+}
+
+.operation-list li {
+    float:left;
+    text-align: center;
+    width: 50px;
+}

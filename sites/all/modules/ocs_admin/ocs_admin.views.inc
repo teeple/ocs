@@ -7,7 +7,35 @@ function ocs_admin_views_data() {
 
     $data = array();
 
-    // OCS Customer Table
+    $customer = ocs_admin_table_customer();
+    $data = array_merge( $data, $customer);
+
+    $account = ocs_admin_table_account();
+    $data = array_merge( $data, $account);
+    
+    $service = ocs_admin_table_service_type();
+    $data = array_merge( $data, $service);
+
+    $customer_view = ocs_admin_table_customer_view();
+    $data = array_merge( $data, $customer_view);
+
+    $product = ocs_admin_table_product();
+    $data = array_merge( $data, $product);
+
+    $account_key = ocs_admin_table_account_key_view();
+    $data = array_merge( $data, $account_key);
+
+    $group = ocs_admin_table_group();
+    $data = array_merge( $data, $group);
+
+//    dpm( $data, 'view_data');
+
+    return $data;
+}    
+
+function ocs_admin_table_customer()
+{
+// OCS Customer Table
     $data['ocs_customer']['table']['name'] = 'ocsdata.ocs_customer';
     $data['ocs_customer']['table']['group'] = t('OCS Customer');
     $data['ocs_customer']['table']['base'] = array(
@@ -51,7 +79,11 @@ function ocs_admin_views_data() {
         ),
     );
 
+    return $data;
+}    
 
+function ocs_admin_table_account()
+{
     // OCS Account
     $data['ocs_account']['table']['name'] = 'ocsdata.ocs_account';
     $data['ocs_account']['table']['group'] = t('OCS Account');
@@ -129,8 +161,14 @@ function ocs_admin_views_data() {
         ),
     );
 
+    return $data;
+}    
 
-    // Service Type: Mobile, IPTV and etc
+
+function ocs_admin_table_service_type()
+{
+
+// Service Type: Mobile, IPTV and etc
     $data['service_type']['table']['name'] = 'ocsdata.service_type';
     $data['service_type']['table']['group'] = t('Service Type');
     $data['service_type']['table']['base'] = array(
@@ -174,7 +212,13 @@ function ocs_admin_views_data() {
         ),
     );
 
-    // ocs_customer_view Table edit by charles 2012-04-04
+    return $data;
+}    
+
+
+function ocs_admin_table_customer_view()
+{
+// ocs_customer_view Table edit by charles 2012-04-04
     // Start
     $data['ocs_customer_view']['table']['name'] = 'ocsdata.ocs_customer_view';
     $data['ocs_customer_view']['table']['group'] = t('Customer');
@@ -246,7 +290,134 @@ function ocs_admin_views_data() {
         ),
     );
 
-    // Product Table
+    return $data;
+}    
+
+
+function ocs_admin_table_product()
+{
+    $data['ocs_product_view']['table']['name'] = 'ocsdata.ocs_product';
+    $data['ocs_product_view']['table']['group'] = t('OCS Product');
+    $data['ocs_product_view']['table']['base'] = array(
+        'field' => 'product_name',
+        'title' => t('OCS Product'),
+        'help' => t('Product List registered in OCS'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_product_view']['product_serial_no'] = array(
+        'title' => t('Product Serial Number'),
+        'help' => t('Product Serial No'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_product_view']['product_name'] = array(
+        'title' => t('Product Name'),
+        'help' => t('Product Name'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_product_view']['product_desc'] = array(
+        'title' => t('Product Description'),
+        'help' => t('Product Description'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort_string',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_product_view']['product_status'] = array(
+        'title' => t('Product Status'),
+        'help' => t('Product Status'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_product_view']['product_period'] = array(
+        'title' => t('Product Period'),
+        'help' => t('Product Period'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_date',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort_date',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_date',
+        ),
+    );
+
+    $data['ocs_product_view']['code_name'] = array(
+        'title' => t('Code Name'),
+        'help' => t('Code Name(Product Status : P101)'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort_string',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+    
+    return $data;
+    
+    
+// Product Table
     $data['product']['table']['name'] = 'ocsdata.product';
     $data['product']['table']['group'] = t('OCS Product');
     $data['product']['table']['base'] = array(
@@ -317,6 +488,12 @@ function ocs_admin_views_data() {
             'click sortable' => FALSE,
         ),
     );
+
+    return $data;
+}
+
+function ocs_admin_table_account_key_view()
+{
 
     // ocs_account_key_view edit by charles 2012-04-04
     // Start ocs_account_key_view
@@ -400,6 +577,87 @@ function ocs_admin_views_data() {
     );
     // End ocs_account_key_view
 
+    return $data;
+}
+
+function ocs_admin_table_group()
+{
+    // Customer Group table
+    $data['ocs_group']['table']['name'] = 'ocsdata.ocs_group_service';
+    $data['ocs_group']['table']['group'] = t('OCS Customer Group');
+    $data['ocs_group']['table']['base'] = array(
+        'field' => 'group_id',
+        'title' => t('OCS Customer Group'),
+        'help' => t('Customer Groups registered in OCS'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_group']['group_id'] = array(
+        'title' => t('Group ID'),
+        'help' => t('Group ID'),
+        'field' => array(
+            'handler' => 'views_handler_field_numeric',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_group']['parent_group_id'] = array(
+        'title' => t('Parent Group ID'),
+        'help' => t('Parent Group ID'),
+        'field' => array(
+            'handler' => 'views_handler_field_numeric',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_group']['group_name'] = array(
+        'title' => t('Group Name'),
+        'help' => t('Group Name'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_group']['master_number'] = array(
+        'title' => t('Master Number'),
+        'help' => t('Master Number'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
 
     return $data;
 }

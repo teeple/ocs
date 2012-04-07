@@ -70,6 +70,8 @@ function menu_overview_form($form, &$form_state, $menu) {
   $form = array_merge($form, _menu_overview_tree_form($tree));
   $form['#menu'] =  $menu;
 
+    dpm( $form, 'menu form');
+
   if (element_children($form)) {
     $form['actions'] = array('#type' => 'actions');
     $form['actions']['submit'] = array(

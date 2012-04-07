@@ -1,6 +1,7 @@
 <?php
 
 module_load_include( 'inc', 'ocs_admin', 'ocs_account');
+module_load_include( 'inc', 'ocs_admin', 'ocs_group');
 
 /***
 * Implementation of hook_menu
@@ -36,10 +37,62 @@ function ocs_admin_menu() {
         'type' => MENU_CALLBACK,
     );
 
-    
+    $items['ocs_admin/group/manage/%group'] = array(
+        'title' => 'Customer Group Information',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_form', 3),
+        'title callback' => 'ocs_admin_group_title',
+        'title arguments' => array('Edit'),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_group.inc',
+     );
+
+    $items['ocs_admin/group/manage/%group/list'] = array(
+        'title' => 'List Sub Groups',
+        'weight' => -10,
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+     );
+
+    $items['ocs_admin/group/manage/%group/add'] = array(
+        'title' => 'Add Sub Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_subgroup_form', 'add', 3),
+        'access arguments' => array('access content'),
+        'type' => MENU_LOCAL_ACTION,
+        'file' => 'ocs_group.inc',
+    );
+
+    $items['ocs_admin/group/manage/%group/edit'] = array(
+        'title' => 'Edit Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_edit_form', 'edit', 3),
+        'access arguments' => array('access content'),
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'file' => 'ocs_group.inc',
+    );
 
     return $items;
 }
+
+/*
+** implement hook_theme()
+*/
+function ocs_admin_theme()
+{
+    return array(
+        'ocs_admin_group_form' => array(
+            'file' => 'ocs_group.inc',
+            'render element' => 'form',
+        ),
+        'ocs_admin_group_overview' => array(
+            'file' => 'ocs_group.inc',
+            'variables' => array( 'title' => NULL, 'name' => NULL, 'description' => NULL),
+        ),
+    );
+}
+
 
 /*
 * Menu callback to say hello to the world
@@ -158,3 +211,93 @@ function ocs_admin_views_api() {
       return array('api' => 3.0);
 }
 
+/*
+function ocs_admin_taxonomy_term_insert($term) {
+  if (!empty($term->synonyms)) {
+    foreach (explode("\n", str_replace("\r", '', $term->synonyms)) as $synonym) {
+      if ($synonym) {
+        db_insert('taxonomy_term_synonym')
+        ->fields(array(
+          'tid' => $term->tid, 
+          'name' => rtrim($synonym),
+        ))
+        ->execute();
+      }
+    }
+  }
+}
+
+function ocs_admin_taxonomy_term_load($terms) {
+  $result = db_query('SELECT tid, name FROM taxonomy_term_synonym ');
+  foreach ($result as $record) {
+    $terms[$record->tid]->foo = $record->foo;
+  }
+}
+*/
+
+/*
+    load group 
+*/
+function group_load( $groupid) 
+{
+    $all_group = group_load_all();
+    return isset( $all_group[$groupid]) ? $all_group[$groupid] : FALSE;
+}
+
+/*
+    load all group
+*/
+function group_load_all()
+{
+   $groups = &drupal_static(__FUNCTION__);
+   if ( !isset( $groups)) {
+       db_set_active('ocsdb');
+
+       $query = db_select( 'ocs_group', 'g');
+       $groups = $query->fields( 'g')
+            ->execute()
+            ->fetchAllAssoc( 'group_id', PDO::FETCH_ASSOC);
+
+//        dpm( $groups, 'fetched groups');
+
+        db_set_active('default');
+    } 
+
+    return $groups;
+}
+
+
+/*
+    save OCS Customer Group
+*/
+function ocs_admin_group_save( $group)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'group_id' => isset($group['group_id']) ? $group['group_id'] : NULL,
+        'ancestor_group_id' => isset($group['ancestor_group_id']) ? $group['ancestor_group_id'] : 0,
+        'parent_group_id' => isset($group['parent_group_id']) ? $group['parent_group_id'] : 0,
+        'group_name' => isset($group['group_name']) ? $group['group_name'] : NULL,
+        'service_type' => isset($group['service_type']) ? $group['service_type'] : 0,
+        );
+    if ( isset( $group['master_number']))
+        $fields['master_number'] = $group['master_number'];
+
+    if ( isset( $group['group_id'])) {
+        $status = db_merge( 'ocs_group')
+            ->key( array( 'group_id' => $group['group_id']))
+            ->fields( $fields)
+            ->execute();
+        dpm( $status, 'db_merge result');
+    }
+    else {
+        // insert
+        $status = db_insert( 'ocs_group')
+            ->fields( $fields)
+            ->execute();
+        dpm( $status, 'db_insert result');
+    }
+
+    db_set_active( 'default');
+}
