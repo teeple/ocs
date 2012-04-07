@@ -28,6 +28,9 @@ function ocs_admin_views_data() {
     $group = ocs_admin_table_group();
     $data = array_merge( $data, $group);
 
+    $member = ocs_admin_table_group_member();
+    $data = array_merge( $data, $member);
+
 //    dpm( $data, 'view_data');
 
     return $data;
@@ -583,7 +586,7 @@ function ocs_admin_table_account_key_view()
 function ocs_admin_table_group()
 {
     // Customer Group table
-    $data['ocs_group']['table']['name'] = 'ocsdata.ocs_group_service';
+    $data['ocs_group']['table']['name'] = 'ocsdata.ocs_group';
     $data['ocs_group']['table']['group'] = t('OCS Customer Group');
     $data['ocs_group']['table']['base'] = array(
         'field' => 'group_id',
@@ -656,6 +659,106 @@ function ocs_admin_table_group()
         ),
         'argument' => array( 
             'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    return $data;
+}
+
+function ocs_admin_table_group_member()
+{
+    // Customer Group table
+    $data['ocs_group_member']['table']['name'] = 'ocsdata.ocs_group_member';
+    $data['ocs_group_member']['table']['group'] = t('OCS Group Members');
+    $data['ocs_group_member']['table']['base'] = array(
+        'field' => 'account_key',
+        'title' => t('OCS Group Members'),
+        'help' => t('Group Members registered in OCS'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_group_member']['account_key'] = array(
+        'title' => t('Account Key'),
+        'help' => t('Account Key (MSISDN, User ID)'),
+        'field' => array(
+            'handler' => 'views_handler_field_string',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_group_member']['group_id'] = array(
+        'title' => t('Group ID'),
+        'help' => t('Group ID'),
+        'field' => array(
+            'handler' => 'views_handler_field_numeric',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    $data['ocs_group_member']['extension'] = array(
+        'title' => t('VPN extension'),
+        'help' => t('VPN extension (3~4 digits)'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_group_member']['limitation'] = array(
+        'title' => t('Usage Limitation'),
+        'help' => t('Usage Limitation'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
+        ),
+    );
+
+    $data['ocs_group_member']['usage'] = array(
+        'title' => t('Current Usage'),
+        'help' => t('Current Usage'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
         ),
     );
 

@@ -246,18 +246,19 @@ function ocs_admin_group_form( $form, &$form_state, $group)
   // first calculate the depth
   $depthlist = array();
   foreach( $subgroups as $node) {
-      $node['path'] = _ocs_admin_build_path( $subgroups, $node);
-      $node['depth'] = count( $node['path']);
-      $depthlist[ $node['depth']][] = array(
-        'item' => $node,
+      $path = _ocs_admin_build_path( $subgroups, $node);
+      $depth = count( $path);
+      $depthlist[ $depth][] = array(
+        'db' => $node,
         'title' => $node['group_name'],
         'mlid' => $node['group_id'],
         'plid' => $node['parent_group_id'],
-        'depth' => $node['depth'],
+        'depth' => $depth,
+        'path' => $path,
         'below' => array(),
       );
   }
-  dpm( $depthlist, 'depthlist');
+//  dpm( $depthlist, 'depthlist');
 
   // build tree
   $depth = 1;
@@ -267,13 +268,13 @@ function ocs_admin_group_form( $form, &$form_state, $group)
     foreach( $depthlist[ $depth] as $item) {
         // traverse path
   //      dpm( $item['item']['path'], 'path');
-        _ocs_admin_build_tree( $tree, $item['item']['path'], $item);
+        _ocs_admin_build_tree( $tree, $item['path'], $item);
     }
 
     $depth = $depth +1;
   }
 
-    dpm( $tree, 'tree');
+//    dpm( $tree, 'tree');
 
   $form = array_merge($form, _ocs_group_tree_form($tree));
 
@@ -345,6 +346,49 @@ function _ocs_group_tree_form($tree) {
   return $form;
 }
 
+function ocs_admin_group_form_submit( $form, &$form_state)
+{
+//    dpm( $form_state, 'form_state');
+
+    $order = array_flip( array_keys( $form_state['input']));
+    $form = array_merge( $order, $form);
+
+//    dpm( $order, 'order');
+ //   dpm( $form, 'form');
+
+    $updated_items = array();
+    $fields = array( 'plid' => 'parent_group_id');
+
+    foreach( element_children( $form) as $mlid) {
+        if ( isset( $form[$mlid]['#item'])) {
+            $element = $form[$mlid];
+            // update any fields that have changed in this menu item.
+            foreach( $fields as $field => $db_field) {
+                if ( $element[$field]['#value'] != $element[$field]['#default_value']) {
+                    $element['#item']['db'][$db_field] = $element[$field]['#value'];
+                    $updated_items[$mlid] = $element['#item'];
+//                    dpm( $updated_items[$mlid], 'updated');
+                }
+            }
+            // hidden is a special case, the value needs to be reserved
+            /*
+            if ( $element['hidden']['#value'] != $element['hidden']['#default_value']) {
+                // convert to integer rather than boolean due to PDO cast to string
+                $element['#item']['hidden'] = $element['hidden']['#value'] ? 0 : 1;
+                $updated_items[$mlid] = $element['#item'];
+                dpm( $updated_items[$mlid], 'updated hidden');
+            }
+            */
+        }
+    }
+
+    foreach( $updated_items as $item) {
+        ocs_admin_group_save( $item['db']);
+    }
+
+    drupal_set_message( t('Your configuration has been saved.'));
+}
+
 function ocs_admin_group_title( $op)
 {
     return $op. ' Group';
@@ -368,7 +412,7 @@ function theme_ocs_admin_group_form($variables) {
   $header = array(
     t('Group Name'),
     t('Weight'),
-    array( 'data' => t('Operations'), 'colspan' => '2'),
+    array( 'data' => t('Operations'), 'colspan' => '3'),
   );
 
   $rows = array();
@@ -411,6 +455,68 @@ function theme_ocs_admin_group_form($variables) {
   $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
   $output .= drupal_render_children($form);
   return $output;
+}
+
+
+/*
+** delete subgroup
+*/
+function ocs_admin_group_delete_subgroup_confirm( $form, &$form_state, $group)
+{
+    $form['#group'] = $group;
+    $num_members = 1;
+    $caption = '';
+    if ( $num_members) {
+        $caption .= '<p>' . format_plural( $num_members, 
+            '<strong>Warning:</strong> There is currently 1 member in "%name". It will be deleted.', 
+            '<strong>Warning:</strong> There are currently @count members in "%name". They will be deleted.', 
+            array( '%name' => $group['group_name'])) . '</p>';
+    }
+
+    $caption .= '<p>'. t('This action cannot be undone.') . '</p>';
+
+    return confirm_form( $form, t('Are you sure to delete the subgroup "%name"?',
+        array( '%name' => $group['group_name'])),
+        'ocs_admin/group/manage/' . $group['group_id'],
+        $caption, t('Delete'));
+}
+
+function ocs_admin_group_delete_subgroup_confirm_submit( $form, &$form_state)
+{
+    $group = $form['#group'];
+
+    ocs_admin_group_delete( $group);
+
+    $t_args = array( '%name' => $group['group_name']);
+    drupal_set_message( t('The subgroup %name has been deleted.', $t_args));
+    watchdog( 'ocs_admin', 'Deleted subgroup %name.', $t_args, WATCHDOG_NOTICE);
+
+    $form_state['redirect'] = 'ocs_admin/group/manage/'. $group['ancestor_group_id'];
+}
+
+/*
+** add/edit members to group form
+*/
+function ocs_admin_group_member_form( $form, &$form_state, $type, $group)
+{
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    return $form;
+}
+
+function ocs_admin_group_member_form_submit( $form, &$form_state)
+{
+    $group = $form_state['values'];
+    dpm( $group, 'submit group');
+    ocs_admin_group_save($group);
+
+    drupal_set_message( t('Your configuration has been saved.'));
+
+    $form_state['redirect'] = 'ocs_admin/group/manage/' . $group['ancestor_group_id'];
 }
 
 

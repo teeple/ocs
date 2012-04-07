@@ -33,7 +33,7 @@ function ocs_admin_account_add( $impl = NULL, $arg = NULL, $init = TRUE)
 function ocs_admin_account_select_row( $args)
 {
     ctools_include('ajax'); // Module  include the dependence it needs for ajax.
-    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/".$args, t('select'));
+    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/select/".$args, t('select'));
     return $link;
 }
 
@@ -147,6 +147,31 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
             array('@name' => isset($arg['product_name']) ? $arg['product_name'] : '')),
     );
 
+    $form['account_key'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Account Key (MSISDN)'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#prefix' => '<div id="ocs_admin_account_key_form_div">',
+        '#suffix' => '</div>',
+    );
+
+    $form['account_key']['account_key'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Account Key'),
+        '#description' => t('Key of Account such as MSISDN or User Name'),
+        '#default_value' => isset($arg['key_id']) ? $arg['key_id'] : '',
+        '#required' => TRUE,
+        '#description' => t('<a href="#@link">Select an account key</a> to assign', 
+            array( '@link' => 'select_key')),
+    );
+
+    $form['account_key']['key_type'] = array(
+        '#type' => 'item',
+        '#title' => t('Account Type : @name', 
+            array('@name' => isset($arg['key_name']) ? $arg['key_name'] : '')),
+    );
+
     $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Confirm'),
@@ -178,7 +203,7 @@ function ocs_admin_account_add_form_panel_submit( $form, &$form_state)
     if ( $form_state['values']['op'] == 'Confirm') {
         // save to DB
         dsm( 'confirmed: ');
-        ocs_admin_db_account_add( $form_state['values']);
+        ocs_admin_account_save( $form_state['values']);
     }
 }
 

@@ -29,10 +29,10 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
     );
 
-    $items['ocs_admin/account/add/%/%ctools_js/%/%/%'] = array(
+    $items['ocs_admin/account/add/%/%ctools_js/select/%/%/%'] = array(
         'title' => 'Callback for adding a new account',
         'page callback' => 'ocs_account_select',
-        'page arguments' => array(3,4,5,6,7),     // nojs/type/id/name i.e. customer/1/tom
+        'page arguments' => array( 3, 4, 6, 7, 8),     // nojs/type/id/name i.e. customer/1/tom
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
     );
@@ -63,6 +63,14 @@ function ocs_admin_menu() {
         'file' => 'ocs_group.inc',
     );
 
+    $items['ocs_admin/group/manage/%group/delete'] = array(
+        'title' => 'Delete Sub Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_delete_subgroup_confirm', 3),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_group.inc',
+    );
+
     $items['ocs_admin/group/manage/%group/edit'] = array(
         'title' => 'Edit Group',
         'page callback' => 'drupal_get_form',
@@ -72,6 +80,19 @@ function ocs_admin_menu() {
         'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         'file' => 'ocs_group.inc',
     );
+
+    /*
+    $items['ocs_admin/group/manage/%group/member'] = array(
+        'title' => 'Add Members to Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_member_form', 'add', 3),
+        'access arguments' => array('access content'),
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'file' => 'ocs_group.inc',
+    );
+    */
+
 
     return $items;
 }
@@ -301,3 +322,51 @@ function ocs_admin_group_save( $group)
 
     db_set_active( 'default');
 }
+
+function ocs_admin_group_delete( $group)
+{
+    db_set_active( 'ocsdb');
+
+    // delete
+    $status = db_delete( 'ocs_group')
+        ->condition( 'group_id', $group['group_id'])
+        ->execute();
+    dpm( $status, 'db_delete result');
+
+    // update
+    $status = db_update( 'ocs_group')
+        ->fields( array(
+            'parent_group_id' => $group['parent_group_id']
+            ))
+        ->condition( 'ancestor_group_id', $group['ancestor_group_id'], '=')
+        ->condition( 'parent_group_id', $group['group_id'], '=')
+        ->execute();
+    dpm( $status, 'db_update result');
+
+    db_set_active( 'default');
+}
+
+/*
+    save OCS Customer Account
+*/
+function ocs_admin_account_save( $account)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'account_key' => isset($account['account_key']) ? $account['account_key'] : NULL,
+        'status' => 0,
+        'subscription_key' => isset($account['subscription_key']) ? $account['subscription_key'] : '0',
+        'customer_id' => isset($account['customer_id']) ? $account['customer_id'] : '0',
+        'product_id' => isset($account['product_id']) ? $account['product_id'] : 0,
+        );
+
+     // insert
+    $status = db_insert( 'ocs_account')
+        ->fields( $fields)
+        ->execute();
+    dpm( $status, 'db_insert result');
+
+    db_set_active( 'default');
+}
+
