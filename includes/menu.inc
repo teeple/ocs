@@ -438,9 +438,11 @@ function menu_set_item($path, $router_item) {
  */
 function menu_get_item($path = NULL, $router_item = NULL) {
   $router_items = &drupal_static(__FUNCTION__);
+//  dpm( $router_items, 'router_items');
   if (!isset($path)) {
     $path = $_GET['q'];
   }
+//  dpm( $path, 'path');
   if (isset($router_item)) {
     $router_items[$path] = $router_item;
   }
@@ -451,6 +453,7 @@ function menu_get_item($path = NULL, $router_item = NULL) {
       menu_rebuild();
     }
     $original_map = arg(NULL, $path);
+//  dpm( $original_map, 'rebuild original map');
 
     // Since there is no limit to the length of $path, use a hash to keep it
     // short yet unique.
@@ -461,9 +464,12 @@ function menu_get_item($path = NULL, $router_item = NULL) {
     else {
       $parts = array_slice($original_map, 0, MENU_MAX_PARTS);
       $ancestors = menu_get_ancestors($parts);
+//  dpm( $parts, 'parts');
+//  dpm( $ancestors, 'ancestors');
       $router_item = db_query_range('SELECT * FROM {menu_router} WHERE path IN (:ancestors) ORDER BY fit DESC', 0, 1, array(':ancestors' => $ancestors))->fetchAssoc();
       cache_set($cid, $router_item, 'cache_menu');
     }
+//  dpm( $router_item, 'rebuild router item');
     if ($router_item) {
       // Allow modules to alter the router item before it is translated and
       // checked for access.
@@ -509,7 +515,9 @@ function menu_execute_active_handler($path = NULL, $deliver = TRUE) {
 
   // Only continue if the site status is not set.
   if ($page_callback_result == MENU_SITE_ONLINE) {
+//    dpm( $path, 'menu path');
     if ($router_item = menu_get_item($path)) {
+//    dpm( $router_item, 'menu router item');
       if ($router_item['access']) {
         if ($router_item['include_file']) {
           require_once DRUPAL_ROOT . '/' . $router_item['include_file'];

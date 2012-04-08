@@ -109,6 +109,25 @@ function ocs_admin_table_account()
     );
 
 
+    $data['ocs_account']['customer_id'] = array(
+        'title' => t('Customer ID'),
+        'help' => t('Customer ID of this account'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+
     $data['ocs_account']['account_key'] = array(
         'title' => t('Account Key'),
         'help' => t('Account Key value such as MSISDN, User Name and etc'),
@@ -600,7 +619,7 @@ function ocs_admin_table_group()
         'title' => t('Group ID'),
         'help' => t('Group ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -615,7 +634,7 @@ function ocs_admin_table_group()
         'title' => t('Parent Group ID'),
         'help' => t('Parent Group ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -678,11 +697,18 @@ function ocs_admin_table_group_member()
         'weight' => -10,
     );
 
+    $data['ocs_group_member']['table']['join'] = array(
+        'group' => array(
+            'left_field' => 'group_id',
+            'field' => 'group_id'
+        )
+    );
+
     $data['ocs_group_member']['account_key'] = array(
         'title' => t('Account Key'),
         'help' => t('Account Key (MSISDN, User ID)'),
         'field' => array(
-            'handler' => 'views_handler_field_string',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -691,13 +717,16 @@ function ocs_admin_table_group_member()
         'sort' => array( 
             'handler' => 'views_handler_sort',
         ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
     );
 
     $data['ocs_group_member']['group_id'] = array(
         'title' => t('Group ID'),
         'help' => t('Group ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -705,6 +734,9 @@ function ocs_admin_table_group_member()
         ),
         'sort' => array( 
             'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
         ),
     );
 
@@ -759,6 +791,17 @@ function ocs_admin_table_group_member()
         ),
         'argument' => array( 
             'handler' => 'views_handler_argument_numeric',
+        ),
+    );
+
+    $data['ocs_group_member']['group'] = array(
+        'title' => t('Group'),
+        'help' => t('Group that this account belongs to'),
+        'relationship' => array(
+            'base' => 'ocs_group',
+            'field' => 'group_id',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Group'),
         ),
     );
 

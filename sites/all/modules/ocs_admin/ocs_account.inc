@@ -33,7 +33,7 @@ function ocs_admin_account_add( $impl = NULL, $arg = NULL, $init = TRUE)
 function ocs_admin_account_select_row( $args)
 {
     ctools_include('ajax'); // Module  include the dependence it needs for ajax.
-    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/select/".$args, t('select'));
+    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/".$args, t('select'));
     return $link;
 }
 

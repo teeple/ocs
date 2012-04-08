@@ -31,9 +31,9 @@ function ocs_admin_group_overview()
             array( 'title' => $item['title'],
                 'name' => $item['group_name'],
                 'description' => $item['description'])));
-        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/manage'. $item['group_id']));
-        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/manage'. $item['group_id']));
-        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/manage'. $item['group_id']));
+        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/'. $item['group_id']));
+        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/'. $item['group_id']));
+        $row[] = array( 'data' => l(t('list members'), 'ocs_admin/group/'. $item['group_id']));
         $rows[] = $row;
     }
 
@@ -97,7 +97,7 @@ function ocs_admin_group_edit_form_submit( $form, &$form_state)
 
     drupal_set_message( t('Your configuration has been saved.'));
 
-    $form_state['redirect'] = 'ocs_admin/group/manage/' . $group['ancestor_group_id'];
+    $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'];
 }
 
 /*
@@ -153,7 +153,7 @@ function ocs_admin_group_subgroup_form_submit( $form, &$form_state)
 
     drupal_set_message( t('Your configuration has been saved.'));
 
-    $form_state['redirect'] = 'ocs_admin/group/manage/' . $group['ancestor_group_id'];
+    $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'];
 }
 
 
@@ -287,7 +287,7 @@ function ocs_admin_group_form( $form, &$form_state, $group)
   }
   else {
     $form['#empty_text'] = t('There are no subgroups yet. <a href="@link">Add Subgroup</a>.', 
-        array('@link' => url('ocs_admin/group/manage/'. $group['groupid'] .'/add')));
+        array('@link' => url('ocs_admin/group/'. $group['groupid'] .'/add')));
   }
 
   return $form;
@@ -331,11 +331,11 @@ function _ocs_group_tree_form($tree) {
       $operations['edit'] = array( 
         '#type' => 'link',
         '#title' => t('edit'),
-        '#href' => 'ocs_admin/group/manage/'. $item['mlid'] . '/edit');
+        '#href' => 'ocs_admin/group/'. $item['mlid'] . '/edit');
       $operations['delete'] = array( 
         '#type' => 'link',
         '#title' => t('delete'),
-        '#href' => 'ocs_admin/group/manage/'. $item['mlid'] . '/delete');
+        '#href' => 'ocs_admin/group/'. $item['mlid'] . '/delete');
       $form[$mlid]['operations'] = $operations;  
     }
 
@@ -392,6 +392,11 @@ function ocs_admin_group_form_submit( $form, &$form_state)
 function ocs_admin_group_title( $op)
 {
     return $op. ' Group';
+}
+
+function ocs_admin_member_title( $op)
+{
+    return $op. ' Members';
 }
 
 /**
@@ -477,7 +482,7 @@ function ocs_admin_group_delete_subgroup_confirm( $form, &$form_state, $group)
 
     return confirm_form( $form, t('Are you sure to delete the subgroup "%name"?',
         array( '%name' => $group['group_name'])),
-        'ocs_admin/group/manage/' . $group['group_id'],
+        'ocs_admin/group/' . $group['group_id'],
         $caption, t('Delete'));
 }
 
@@ -491,18 +496,58 @@ function ocs_admin_group_delete_subgroup_confirm_submit( $form, &$form_state)
     drupal_set_message( t('The subgroup %name has been deleted.', $t_args));
     watchdog( 'ocs_admin', 'Deleted subgroup %name.', $t_args, WATCHDOG_NOTICE);
 
-    $form_state['redirect'] = 'ocs_admin/group/manage/'. $group['ancestor_group_id'];
+    $form_state['redirect'] = 'ocs_admin/group/'. $group['ancestor_group_id'];
 }
 
 /*
 ** add/edit members to group form
 */
-function ocs_admin_group_member_form( $form, &$form_state, $type, $group)
+function ocs_admin_group_member_form( $form, &$form_state, $group = NULL, $records = NULL)
 {
+//    dpm( $records, 'members');
+
+    $form['group_id'] =  array(
+        '#type' => 'hidden',
+        '#value' => $group['group_id'],
+    );
+
+    $form['ancestor_group_id'] =  array(
+        '#type' => 'hidden',
+        '#value' => $group['ancestor_group_id'],
+    );
+
+    /*
+    foreach( $records as $record) {
+        $key = $record['account_key'];
+        $form['extension'][$key] = array(
+            '#type' => 'textfield',
+            '#default_value' => '000',
+            '#size' => '50'
+        );
+
+        $records[$key]['extension'] = array(
+            'data' => drupal_render( $form['extension'][$key]),
+        );
+    }
+    */
+
+    $header = array( 'account_key' => 'Account Key', 'customer_name' => 'Cutomer Name');
+    $form['member'] =  array(
+        '#type' => 'tableselect',
+        '#header' => $header,
+        '#options' => $records,
+        '#empty' => t('No content available.'),
+    );
+
     $form['actions'] = array('#type' => 'actions');
     $form['actions']['submit'] = array(
         '#type' => 'submit',
-        '#value' => t('Save'),
+        '#value' => t('Confirm'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
     );
 
     return $form;
@@ -510,13 +555,73 @@ function ocs_admin_group_member_form( $form, &$form_state, $type, $group)
 
 function ocs_admin_group_member_form_submit( $form, &$form_state)
 {
-    $group = $form_state['values'];
-    dpm( $group, 'submit group');
-    ocs_admin_group_save($group);
+    $form_state['redirect'] = 'ocs_admin/group/' . $form_state['values']['ancestor_group_id'] . '/member';
 
-    drupal_set_message( t('Your configuration has been saved.'));
+    if ( $form_state['values']['op'] == 'Confirm') {
+//        dpm( $form_state, 'submit group member');
 
-    $form_state['redirect'] = 'ocs_admin/group/manage/' . $group['ancestor_group_id'];
+        $member = array(
+            'group_id' => $form_state['values']['group_id'],
+            'ancestor_group_id' => $form_state['values']['ancestor_group_id'],
+        );
+        foreach( $form_state['values']['member'] as $key => $value) {
+            if ( $value ) {
+                // it is selected value
+                $member['account_key'] = $value;
+                ocs_admin_member_save( $member);
+            }
+        }
+
+        drupal_set_message( t('Your configuration has been saved.'));
+    }
 }
+
+
+/*
+    add members
+*/
+function ocs_admin_member_add( $group = NULL, $arg = NULL)
+{
+    if ( $arg ) {
+        $_SESSION['ocs_admin_member_add'][ $arg['account_key'] ] = $arg;
+    }
+    else {
+        $_SESSION['ocs_admin_member_add'] = array();
+    }
+
+    $form = drupal_get_form( 'ocs_admin_group_member_form', $group, $_SESSION['ocs_admin_member_add']);
+    $output = '<div id="ocs_admin_member_add_form_div">' . drupal_render( $form) . '</div>';
+
+    return $output;
+}
+
+/*
+**  ajax select button in account & product table
+    impl: _panel, _popup, and etc
+*/
+function ocs_member_select( $group, $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
+{
+//    dpm( $group, 'member select group');
+
+    $arg = array( 
+        'account_key' => $id, 
+        'customer_name' => $name,
+        $id => $id,
+    ); 
+
+    $output = ocs_admin_member_add( $group, $arg);
+
+    if ( $js) {
+        ctools_include('ajax');
+        $commands = array();
+        $commands[] = ajax_command_replace( '#ocs_admin_member_add_form_div', $output);
+        print ajax_render( $commands);
+        exit;
+    }
+    else {
+        return $output;
+    }
+}
+
 
 
