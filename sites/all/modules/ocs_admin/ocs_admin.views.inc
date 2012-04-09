@@ -53,7 +53,7 @@ function ocs_admin_table_customer()
         'title' => t('Customer ID'),
         'help' => t('Customer\' ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -61,6 +61,9 @@ function ocs_admin_table_customer()
         ),
         'sort' => array( 
             'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
         ),
     );
 
@@ -150,7 +153,7 @@ function ocs_admin_table_account()
         'title' => t('Service Type ID'),
         'help' => t('Service Type ID such as Mobile, IPTV, VoIP and etc'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -205,7 +208,7 @@ function ocs_admin_table_service_type()
         'title' => t('Service ID'),
         'help' => t('Service Type ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -454,7 +457,7 @@ function ocs_admin_table_product()
         'title' => t('Product ID'),
         'help' => t('Product ID'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
@@ -533,7 +536,7 @@ function ocs_admin_table_account_key_view()
         'title' => t('OCS Account key'),
         'help' => t('OCS Account key'),
         'field' => array(
-            'handler' => 'views_handler_field_numeric',
+            'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 

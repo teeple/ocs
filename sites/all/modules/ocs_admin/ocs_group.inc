@@ -55,29 +55,31 @@ function ocs_admin_group_edit_form( $form, &$form_state, $type, $group)
 {
     $form['group_id'] = array(
         '#type' => 'hidden',
-        '#value' => $group['group_id'],
+        '#value' => ($type == 'edit') ? $group['group_id'] : NULL,
     );
 
     $form['parent_group_id'] = array(
         '#type' => 'hidden',
-        '#value' => $group['parent_group_id'],
+        '#value' => ($type == 'edit') ? $group['parent_group_id'] : 0,
     );
 
     $form['ancestor_group_id'] = array(
         '#type' => 'hidden',
-        '#value' => $group['ancestor_group_id'],
+        '#value' => ($type == 'edit') ? $group['ancestor_group_id'] : 0,
     );
 
     $form['group_name'] = array(
         '#type' => 'textfield',
         '#title' => 'Name',
-        '#default_value' => $group['group_name'],
+        '#description' => t('Enter Group Name'),
+        '#default_value' => ($type == 'edit') ? $group['group_name'] : NULL,
     );
 
     $form['master_number'] = array(
         '#type' => 'textfield',
         '#title' => 'Master Number',
-        '#default_value' => $group['master_number'],
+        '#description' => t('Enter Master number to be used'),
+        '#default_value' => ($type == 'edit') ? $group['master_number'] : NULL,
     );
 
     $form['actions'] = array('#type' => 'actions');
@@ -97,7 +99,10 @@ function ocs_admin_group_edit_form_submit( $form, &$form_state)
 
     drupal_set_message( t('Your configuration has been saved.'));
 
-    $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'];
+    if ( $group['parent_group_id'] == 0)
+        $form_state['redirect'] = 'ocs_admin/group';    // master group
+    else    // subgroup
+        $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'];
 }
 
 /*
@@ -274,7 +279,7 @@ function ocs_admin_group_form( $form, &$form_state, $group)
     $depth = $depth +1;
   }
 
-//    dpm( $tree, 'tree');
+    dpm( $tree, 'tree');
 
   $form = array_merge($form, _ocs_group_tree_form($tree));
 
@@ -287,7 +292,7 @@ function ocs_admin_group_form( $form, &$form_state, $group)
   }
   else {
     $form['#empty_text'] = t('There are no subgroups yet. <a href="@link">Add Subgroup</a>.', 
-        array('@link' => url('ocs_admin/group/'. $group['groupid'] .'/add')));
+        array('@link' => url('ocs_admin/group/'. $group['group_id'] .'/add')));
   }
 
   return $form;
@@ -389,15 +394,13 @@ function ocs_admin_group_form_submit( $form, &$form_state)
     drupal_set_message( t('Your configuration has been saved.'));
 }
 
-function ocs_admin_group_title( $op)
+function ocs_admin_group_title( $op, $group)
 {
-    return $op. ' Group';
+    if ( $group['parent_group_id'] == 0)
+        return $op. ' Group';
+    return $op. ' Sub Group ';
 }
 
-function ocs_admin_member_title( $op)
-{
-    return $op. ' Members';
-}
 
 /**
  * Returns HTML for the menu overview form into a table.
@@ -480,23 +483,31 @@ function ocs_admin_group_delete_subgroup_confirm( $form, &$form_state, $group)
 
     $caption .= '<p>'. t('This action cannot be undone.') . '</p>';
 
-    return confirm_form( $form, t('Are you sure to delete the subgroup "%name"?',
+    $redirect = 'ocs_admin/group/';
+    $redirect .= ($group['parent_group_id'] == 0) ? '' : $group['ancestor_group_id'];
+
+    return confirm_form( $form, t('Are you sure to delete the group "%name"?',
         array( '%name' => $group['group_name'])),
-        'ocs_admin/group/' . $group['group_id'],
-        $caption, t('Delete'));
+        $redirect, $caption, t('Delete'));
 }
 
 function ocs_admin_group_delete_subgroup_confirm_submit( $form, &$form_state)
 {
     $group = $form['#group'];
 
-    ocs_admin_group_delete( $group);
+    if ( $group['parent_group_id'] == 0)
+        ocs_admin_group_delete( $group);
+    else
+        ocs_admin_subgroup_delete( $group);
 
     $t_args = array( '%name' => $group['group_name']);
-    drupal_set_message( t('The subgroup %name has been deleted.', $t_args));
-    watchdog( 'ocs_admin', 'Deleted subgroup %name.', $t_args, WATCHDOG_NOTICE);
+    drupal_set_message( t('The group %name has been deleted.', $t_args));
+    watchdog( 'ocs_admin', 'Deleted group %name.', $t_args, WATCHDOG_NOTICE);
 
-    $form_state['redirect'] = 'ocs_admin/group/'. $group['ancestor_group_id'];
+    if ( $group['parent_group_id'] == 0)
+        $form_state['redirect'] = 'ocs_admin/group/';
+    else
+        $form_state['redirect'] = 'ocs_admin/group/'. $group['ancestor_group_id'];
 }
 
 /*
@@ -623,5 +634,102 @@ function ocs_member_select( $group, $js = NULL, $type = 'customer', $id = NULL, 
     }
 }
 
+
+/*
+** edit group information form
+*/
+function ocs_admin_member_edit_form( $form, &$form_state, $group, $account_key)
+{
+    $form['group_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $group['group_id'],
+    );
+
+    $form['account_key'] = array(
+        '#type' => 'hidden',
+        '#value' => $account_key,
+    );
+
+    $account = ocs_admin_member_load( $account_key);
+
+    $form['extension'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Extension',
+        '#description' => 'Extension number in VPN group. (3~4 digits)',
+        '#default_value' => $account['extension'],
+    );
+
+    $form['limitation'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Limitation',
+        '#description' => 'Usage Limitation of this member',
+        '#default_value' => $account['limitation'],
+    );
+
+    $form['usage'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Usage',
+        '#description' => 'Current Usage of this member',
+        '#default_value' => $account['usage'],
+    );
+
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    return $form;
+}
+
+function ocs_admin_member_edit_form_submit( $form, &$form_state)
+{
+    $member = $form_state['values'];
+    if ( $form_state['values']['op'] == 'Save') {
+        dpm( $member, 'update member');
+        ocs_admin_member_save( $member);
+        drupal_set_message( t('The information has been updated.'));
+    }
+
+    $form_state['redirect'] = 'ocs_admin/group/' . $member['group_id'] . '/member/';
+}
+
+/*
+** delete subgroup
+*/
+function ocs_admin_member_delete_confirm( $form, &$form_state, $group, $account_key)
+{
+    $form['#group'] = $group;
+    $form['#account_key'] = $account_key;
+    $caption = '<p>' . 
+            t('<strong>Warning:</strong> The member account "%key" will be deleted from the group "%group".',
+                array( '%key' => $account_key, '%group' => $group['group_name'])) .
+            '</p>';
+
+    $caption .= '<p>'. t('This action cannot be undone.') . '</p>';
+
+    return confirm_form( $form, t('Are you sure to delete the member "%key"?',
+        array( '%key' => $account_key)),
+        'ocs_admin/group/' . $group['group_id'] . '/member',
+        $caption, t('Delete'));
+}
+
+function ocs_admin_member_delete_confirm_submit( $form, &$form_state)
+{
+    $group = $form['#group'];
+    $account_key = $form['#account_key'];
+    ocs_admin_member_delete( $account_key);
+
+    $t_args = array( '%key' => $account_key);
+    drupal_set_message( t('The member %key has been deleted.', $t_args));
+    watchdog( 'ocs_admin', 'Deleted group member %key.', $t_args, WATCHDOG_NOTICE);
+
+    $form_state['redirect'] = 'ocs_admin/group/'. $group['group_id'] . '/member';
+}
 
 

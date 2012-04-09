@@ -38,16 +38,34 @@ function ocs_admin_menu() {
     );
 
     $items['ocs_admin/group/%group'] = array(
-        'title' => 'Customer Group Information',
+        'title' => 'Edit Group',
         'page callback' => 'drupal_get_form',
         'page arguments' => array( 'ocs_admin_group_form', 2),
-        'title callback' => 'ocs_admin_group_title',
-        'title arguments' => array('Edit'),
         'access arguments' => array('access content'),
         'file' => 'ocs_group.inc',
      );
 
-    $items['ocs_admin/group/%group/list'] = array(
+    $items['ocs_admin/group/%group/edit'] = array(
+        'title' => 'Edit Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_edit_form', 'edit', 2),
+        'access arguments' => array('access content'),
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'file' => 'ocs_group.inc',
+    );
+
+    $items['ocs_admin/group/add'] = array(
+        'title' => 'Add Group',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_group_edit_form', 'add', 2),
+        'access arguments' => array('access content'),
+        'type' => MENU_LOCAL_TASK,
+        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+        'file' => 'ocs_group.inc',
+    );
+
+     $items['ocs_admin/group/%group/list'] = array(
         'title' => 'List Sub Groups',
         'weight' => -10,
         'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -64,44 +82,31 @@ function ocs_admin_menu() {
     );
 
     $items['ocs_admin/group/%group/delete'] = array(
-        'title' => 'Delete Sub Group',
+        'title callback' => 'ocs_admin_group_title',
+        'title arguments' => array('Delete', 2),
         'page callback' => 'drupal_get_form',
         'page arguments' => array( 'ocs_admin_group_delete_subgroup_confirm', 2),
         'access arguments' => array('access content'),
         'file' => 'ocs_group.inc',
     );
 
-    $items['ocs_admin/group/%group/edit'] = array(
-        'title' => 'Edit Group',
+    $items['ocs_admin/group/%group/member/%/edit'] = array(
+        'title' => 'Edit Member',
         'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_edit_form', 'edit', 2),
+        'page arguments' => array( 'ocs_admin_member_edit_form', 2, 4),
         'access arguments' => array('access content'),
         'type' => MENU_LOCAL_TASK,
         'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
         'file' => 'ocs_group.inc',
     );
 
-    /*
-    $items['ocs_admin/group/manage/%group/member'] = array(
-        'title' => 'Add Members to Group',
+    $items['ocs_admin/group/%group/member/%/delete'] = array(
+        'title' => 'Delete a Member',
         'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_member_form', 'add', 3),
-        'access arguments' => array('access content'),
-        'type' => MENU_LOCAL_TASK,
-        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-        'file' => 'ocs_group.inc',
-    );
-
-    $items['ocs_admin/group/manage/%group/member/add'] = array(
-        'title' => 'Add Members',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_member_form', 3),
-        'title callback' => 'ocs_admin_member_title',
-        'title arguments' => array('Add'),
+        'page arguments' => array( 'ocs_admin_member_delete_confirm', 2, 4),
         'access arguments' => array('access content'),
         'file' => 'ocs_group.inc',
     );
-    */
 
     // MAX_MENU_PATH is 9
     $items['ocs_admin/group/%group/addmember/%ctools_js/%/%/%'] = array(
@@ -334,16 +339,41 @@ function ocs_admin_group_save( $group)
     }
     else {
         // insert
-        $status = db_insert( 'ocs_group')
+        $options = array('return' => Database::RETURN_INSERT_ID);
+        $last_insert_id = db_insert( 'ocs_group', $options)
             ->fields( $fields)
             ->execute();
-        dpm( $status, 'db_insert result');
+        dpm( $last_insert_id, 'db_insert result');
+
+        // update ancestor_group_id
+        if ( $fields['ancestor_group_id'] == 0 && $last_insert_id > 0) {
+            $result = db_update( 'ocs_group')
+                ->fields( array(
+                    'ancestor_group_id' => $last_insert_id
+                ))
+                ->condition( 'group_id', $last_insert_id, '=')
+                ->execute();
+            dpm( $result, 'db_update result');
+        }
     }
 
     db_set_active( 'default');
 }
 
 function ocs_admin_group_delete( $group)
+{
+    db_set_active( 'ocsdb');
+
+    // delete the group and all subgroups
+    $status = db_delete( 'ocs_group')
+        ->condition( 'ancestor_group_id', $group['group_id'])
+        ->execute();
+    dpm( $status, 'db_delete result');
+
+    db_set_active( 'default');
+}
+
+function ocs_admin_subgroup_delete( $group)
 {
     db_set_active( 'ocsdb');
 
@@ -416,4 +446,45 @@ function ocs_admin_member_save( $member)
 
     db_set_active( 'default');
 }
+
+
+/*
+    load member info
+*/
+function ocs_admin_member_load( $account_key)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_group_member', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'account_key', $account_key, '=')
+        ->execute();
+
+    $member = $result->fetchAssoc();
+    dpm( $member, 'fetched group member');
+
+    db_set_active('default');
+
+    return $member;
+}
+
+
+/*
+    delete member info
+*/
+function ocs_admin_member_delete( $account_key)
+{
+   db_set_active('ocsdb');
+
+   $result = db_delete( 'ocs_group_member')
+        ->condition( 'account_key', $account_key, '=')
+        ->execute();
+
+    dpm( $result, 'db_delete group member');
+
+    db_set_active('default');
+
+    return $result;
+}
+
 
