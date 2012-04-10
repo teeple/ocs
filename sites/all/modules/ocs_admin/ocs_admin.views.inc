@@ -31,6 +31,13 @@ function ocs_admin_views_data() {
     $member = ocs_admin_table_group_member();
     $data = array_merge( $data, $member);
 
+    /*
+    $member = ocs_admin_card_type();
+    $data = array_merge( $data, $member);
+
+    $member = ocs_admin_product_card();
+    $data = array_merge( $data, $member);
+    */
 //    dpm( $data, 'view_data');
 
     return $data;
@@ -810,3 +817,139 @@ function ocs_admin_table_group_member()
 
     return $data;
 }
+
+function ocs_admin_card_type()
+{
+        /*
+		$host = "newbiz.uange.com";
+		$uid = "root";
+		$pass = "root.123";
+		$db = "ocsdata";
+		
+		$conn = mysql_connect($host,$uid,$pass);
+		mysql_select_db($db,$conn);
+		
+		$mysql_query('select a.card_type, a.product_name, a.usable ' . 
+		             '  from (select ifnull(a.card_type, "AAAA") card_type, ' .
+		             '               b.product_name, ' .
+		             '               ifnull(a.usable, 0) usable ' .
+		             '          from ocsdata.ocs_card_product a right outer join ocsdata.ocs_product b ' .
+		             '            on a.product_id = b.product_serial_no) a ' .
+		             ' where a.card_type = "AAAA"');
+
+    $board_result=mysql_query($str_sql,$conn);
+    $card_type=mysql_result($card_type,0,0);
+		$product_name=mysql_result($product_name,0,1);
+		$usable=mysql_result($board_result,0,2);
+
+*/
+
+    // Card Type
+    $data['ocs_card_type']['table']['name'] = 'ocsdata.ocs_card_type';
+    $data['ocs_card_type']['table']['group'] = t('OCS Card Type');
+    $data['ocs_card_type']['table']['base'] = array(
+        'field' => 'card_type',
+        'title' => t('OCS Card Type'),
+        'help' => t('OCS Card Type'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_card_type']['card_type'] = array(
+        'title' => t('Card Type'),
+        'help' => t('Card Type'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    $data['ocs_card_type']['unit'] = array(
+        'title' => t('Unit'),
+        'help' => t('Card unit'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
+        ),
+    );
+
+    $data['ocs_card_type']['active_period'] = array(
+        'title' => t('Active Period'),
+        'help' => t('Active Period'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
+        ),
+    );
+
+    $data['ocs_card_type']['grace_period'] = array(
+        'title' => t('Grace Period'),
+        'help' => t('Grace Period'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_numeric',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_numeric',
+        ),
+    );
+
+    $data['ocs_card_type']['description'] = array(
+        'title' => t('Description'),
+        'help' => t('Description'),
+        'field' => array(
+            'handler' => 'views_handler_field',
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    return $data;
+}
+
+function ocs_admin_product_card()
+{
+	return $data;
+}    
+

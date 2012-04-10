@@ -115,6 +115,7 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
         '#required' => TRUE,
         '#description' => t('<a href="#@link">Select a customer</a> to add an account', 
             array( '@link' => 'select_customer')),
+        '#size' => '30',
     );
 
     $form['customer']['customer_name'] = array(
@@ -139,6 +140,7 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
         '#required' => TRUE,
         '#description' => t('<a href="#@link">Select a product</a> to assign', 
             array( '@link' => 'select_product')),
+        '#size' => '30',
     );
 
     $form['product']['product_name'] = array(
@@ -164,6 +166,7 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
         '#required' => TRUE,
         '#description' => t('<a href="#@link">Select an account key</a> to assign', 
             array( '@link' => 'select_key')),
+        '#size' => '30',
     );
 
     $form['account_key']['key_type'] = array(

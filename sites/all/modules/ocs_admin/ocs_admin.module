@@ -7,6 +7,7 @@ module_load_include( 'inc', 'ocs_admin', 'ocs_group');
 * Implementation of hook_menu
 */
 function ocs_admin_menu() {
+
     $items['helloworld'] = array(
         'title' => 'Hello World',
         'page callback' => 'drupal_get_form',
@@ -117,6 +118,22 @@ function ocs_admin_menu() {
         'access arguments' => TRUE,
         'type' => MENU_CALLBACK,
         'file' => 'ocs_group.inc',
+    );
+
+    $items['ocs_admin/card/cardtype/%'] = array(
+        'title' => 'Add Card Type',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_card_form', 'add', 3),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_card.inc',
+    );
+
+    $items['ocs_admin/card/product/%/add'] = array(
+        'title' => 'Related Product',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_product_card', 'add', 3),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_card.inc',
     );
 
     return $items;
@@ -487,4 +504,98 @@ function ocs_admin_member_delete( $account_key)
     return $result;
 }
 
+/*
+    add card type
+*/
+function ocs_admin_card_form_save( $cardtype)
+{
+	
+  db_set_active( 'ocsdb');
+  $card_type = strtoupper($cardtype['card_type']);
 
+  $fields = array( 
+      'card_type' =>  isset($card_type) ?  $card_type : NULL,
+      'unit' => isset($cardtype['unit']) ? $cardtype['unit'] : NULL,
+      'active_period' => isset($cardtype['active_period']) ? $cardtype['active_period'] : NULL,
+      'grace_period' => isset($cardtype['grace_period']) ? $cardtype['grace_period'] : NULL,
+      'description' => isset($cardtype['description']) ? $cardtype['description'] : NULL,
+      );
+
+  if ( isset( $cardtype['card_type'])) {
+      $status = db_merge( 'ocs_card_type')
+          ->key( array( 'card_type' => $cardtype['card_type']))
+          ->fields( $fields)
+          ->execute();
+      dpm( $status, 'db_merge result');
+  }
+  else {
+      // insert
+      $options = array('return' => Database::RETURN_INSERT_ID);
+      $last_insert_id = db_insert( 'ocs_card_type', $options)
+          ->fields( $fields)
+          ->execute();
+      dpm( $last_insert_id, 'db_insert result');
+  }
+
+  db_set_active( 'default');
+  return 1;
+}
+
+function ocs_admin_form_alter(&$form, &$form_state, $form_id)
+{
+/*
+  if ($form_id == 'ocs_admin_card_form')
+  {
+	  if (ChkParamRule($form_state['input']['unit'], 'int') != 1) {
+			dpm('Invalid unit data!');
+	  	return 0;
+	  }
+  }
+  return 1;
+
+  if (ChkParamRule($cardtype['unit'], 'int') != 1){
+		dpm('Invalid unit data!');
+  	return 0;
+  }
+  
+  if (ChkParamRule($cardtype['active_period'], 'int') != 1){
+		dpm(' Invalid active period data!');
+  	return 0;
+  }
+  
+  if (ChkParamRule($cardtype['grace_period'], 'int') != 1) {
+		dpm('Invalid grace period data!');
+  	return 0;
+  }
+  
+  
+*/
+}
+
+/*
+    Parameter Check
+*/
+function ChkParamRule($obj, $rule)
+{
+	$chk = 1;
+	$obj = trim($obj);
+	
+	if($obj){
+		//English
+		if('en' == $rule){
+			if(preg_match("/[a-zA-Z]/", $obj)) $chk = 0;
+		}
+
+		//Number
+		if('int' == $rule){
+			if(preg_match("/[0-9]/", $obj)) $chk = 0;
+		}
+
+		// Special
+		if('special' == $rule){
+			if(preg_match("/[!#$%^&*()?+=\/]/", $obj)) $chk = 0;
+		}
+
+		return $chk;
+	}
+}

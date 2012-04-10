@@ -282,6 +282,67 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_code_sub` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card_type`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_type` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_type` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
+  `unit` DECIMAL(8) NULL DEFAULT 0 COMMENT '충전금액' ,
+  `active_period` INT NULL DEFAULT 0 COMMENT 'Active 기간' ,
+  `grace_period` INT NULL DEFAULT 0 COMMENT 'Grace 기간' ,
+  PRIMARY KEY (`card_type`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card` (
+  `card_no` VARCHAR(32) NOT NULL COMMENT '카드번호' ,
+  `card_type` VARCHAR(4) NOT NULL ,
+  `pin_no` VARCHAR(32) NULL COMMENT 'PIN 번호' ,
+  `recharge_datetime` DATETIME NULL COMMENT '충전일시' ,
+  `account_key` VARCHAR(24) NULL COMMENT 'Account Key' ,
+  `status` VARCHAR(2) NULL DEFAULT 0 COMMENT '카드상태(IDLE, NOT USED, USED, ...)' ,
+  PRIMARY KEY (`card_no`) )
+ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `IDX_PIN_NO` ON `ocsdata`.`ocs_card` (`pin_no` ASC) ;
+
+CREATE INDEX `fk_ocs_recharge_ocs_card_type1` ON `ocsdata`.`ocs_card` (`card_type` ASC) ;
+
+USE `ocsdata` ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card_added_service`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_added_service` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_added_service` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드유형' ,
+  `start_date` DATE NOT NULL COMMENT '적용일시' ,
+  `end_date` DATE NULL COMMENT '종료일시' ,
+  `promotion_no` VARCHAR(16) NULL COMMENT 'pc에서 정의한 promotion 호출' ,
+  PRIMARY KEY (`card_type`, `start_date`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_product_card`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_product` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_product` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
+  `product_id` VARCHAR(45) NOT NULL COMMENT '상품 코드' ,
+  `usable` TINYINT(1) NULL DEFAULT 0 COMMENT '사용가능 여부(0:not usd, 1:use)' ,
+  PRIMARY KEY (`card_type`, `product_id`) )
+ENGINE = InnoDB;
+
 
 /*******************************************************************************
 -- -----------------------------------------------------
@@ -10475,9 +10536,69 @@ INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, 
 INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('HYBRID', 'postpaid', '1', '12', '1'); 
 
 -- Product Data
-insert into ocs_code_master (master_code, code_name) values ('P100', 'Product Status');
-insert into ocs_code_sub (master_code, sub_code, code_name) values ('P100', '1', 'Planned');
-insert into ocs_code_sub (master_code, sub_code, code_name) values ('P100', '2', 'Designed');
-insert into ocs_code_sub (master_code, sub_code, code_name) values ('P100', '3', 'Activated');
-insert into ocs_code_sub (master_code, sub_code, code_name) values ('P100', '4', 'Disconnected');
+insert into ocsdata.ocs_code_master (master_code, code_name) values ('P100', 'Product Status');
+insert into ocsdata.ocs_code_sub (master_code, sub_code, code_name) values ('P100', '1', 'Planned');
+insert into ocsdata.ocs_code_sub (master_code, sub_code, code_name) values ('P100', '2', 'Designed');
+insert into ocsdata.ocs_code_sub (master_code, sub_code, code_name) values ('P100', '3', 'Activated');
+insert into ocsdata.ocs_code_sub (master_code, sub_code, code_name) values ('P100', '4', 'Disconnected');
 
+-- -----------------------------------------------------
+-- Card Type
+-- -----------------------------------------------------
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAA', 50000, 0, 60, '50000SU 0days SMS Dealer');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAB', 10000, 30, 60, '10000SU 0days SMS Dealer');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAC', 3000, 30, 60, 'Rural Promotion (New site)');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAD', 33000, 90, 60, '33000SU 90days WLL');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAE', 2500, 0, 60, '1000SU 60days Econo');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAF', 5000, 30, 60, '5000SU 60days, bonus D20');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAG', 1000, 0, 60, '1000SU 0days Econo');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAH', 2000, 0, 60, '2000SU 0 days ALL service');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAI', 5000, 0, 60, '5000SU 60days, coupon D20');
+insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAJ', 0, 0, 60, 'SkyPhone scratch (Skycall, D20)');
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card` (
+  `card_no` VARCHAR(32) NOT NULL COMMENT '카드번호' ,
+  `card_type` VARCHAR(4) NOT NULL ,
+  `pin_no` VARCHAR(32) NULL COMMENT 'PIN 번호' ,
+  `recharge_datetime` DATETIME NULL COMMENT '충전일시' ,
+  `account_key` VARCHAR(24) NULL COMMENT 'Account Key' ,
+  `status` VARCHAR(2) NULL DEFAULT 0 COMMENT '카드상태(IDLE, NOT USED, USED, ...)' ,
+  PRIMARY KEY (`card_no`) )
+ENGINE = InnoDB;
+
+CREATE UNIQUE INDEX `IDX_PIN_NO` ON `ocsdata`.`ocs_card` (`pin_no` ASC) ;
+
+CREATE INDEX `fk_ocs_recharge_ocs_card_type1` ON `ocsdata`.`ocs_card` (`card_type` ASC) ;
+
+USE `ocsdata` ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card_added_service`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_added_service` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_added_service` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드유형' ,
+  `start_date` DATE NOT NULL COMMENT '적용일시' ,
+  `end_date` DATE NULL COMMENT '종료일시' ,
+  `promotion_no` VARCHAR(16) NULL COMMENT 'pc에서 정의한 promotion 호출' ,
+  PRIMARY KEY (`card_type`, `start_date`) )
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_product_card`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_product` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_product` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
+  `product_id` VARCHAR(45) NOT NULL COMMENT '상품 코드' ,
+  `usable` TINYINT(1) NULL DEFAULT 0 COMMENT '사용가능 여부(0:not usd, 1:use)' ,
+  PRIMARY KEY (`card_type`, `product_id`) )
+ENGINE = InnoDB;
