@@ -200,22 +200,28 @@ function ocs_admin_db_get_subgroup( $groupid)
     return $result;
 }
 
-function _ocs_admin_build_path( $list, &$node)
+/*
+** @param
+    parent_field_name : field name that points parent node
+    myid_name : field name that identifies my node
+*/
+function _ocs_admin_build_path( $list, &$node, $meta_field)
 {
-    $parent = $node['parent_group_id'];
-    $path = array( $node['group_id']);
+    $parent = $node[ $meta_field['plid']];
+    $path = array( $node[ $meta_field['mlid']]);
     
     if ( $parent == '0') {
         return $path;
     }
     else {
         if ( isset($list[$parent])) {
-            return array_merge( _ocs_admin_build_path( $list, $list[$parent]), $path);
+            return array_merge( _ocs_admin_build_path( $list, $list[$parent], $meta_field), 
+                    $path);
         }
         else {
             // parent not found
             // reset parent group id
-            $node['parent_group_id'] = 0;
+            $node[ $meta_field['mlid']] = 0;
             return $path;
         }
     }
@@ -237,27 +243,21 @@ function _ocs_admin_build_tree( &$tree, $path, $item)
 
 
 /*
-** group form
+    build tree form
+    @param meta_field     meta data for building tree
 */
-function ocs_admin_group_form( $form, &$form_state, $group)
+function ocs_admin_build_tree( $nodes, $meta_field)
 {
-//  dpm( $group, 'Admin group form');
-
-  $form['#attached']['css'] = array(drupal_get_path('module', 'ocs_admin') . '/ocs_admin.css');
-
-  // get all subgroups
-  $subgroups = ocs_admin_db_get_subgroup( $group['group_id']);
-
   // first calculate the depth
   $depthlist = array();
-  foreach( $subgroups as $node) {
-      $path = _ocs_admin_build_path( $subgroups, $node);
+  foreach( $nodes as $node) {
+      $path = _ocs_admin_build_path( $nodes, $node, $meta_field);
       $depth = count( $path);
       $depthlist[ $depth][] = array(
         'db' => $node,
-        'title' => $node['group_name'],
-        'mlid' => $node['group_id'],
-        'plid' => $node['parent_group_id'],
+        'title' => $node[ $meta_field['title']],
+        'mlid' => $node[ $meta_field['mlid']],
+        'plid' => $node[ $meta_field['plid']],
         'depth' => $depth,
         'path' => $path,
         'below' => array(),
@@ -279,7 +279,26 @@ function ocs_admin_group_form( $form, &$form_state, $group)
     $depth = $depth +1;
   }
 
-    dpm( $tree, 'tree');
+    return $tree;
+}
+
+/*
+** group form
+*/
+function ocs_admin_group_form( $form, &$form_state, $group)
+{
+//  dpm( $group, 'Admin group form');
+
+  $form['#attached']['css'] = array(drupal_get_path('module', 'ocs_admin') . '/ocs_admin.css');
+
+  // get all subgroups
+  $subgroups = ocs_admin_db_get_subgroup( $group['group_id']);
+  $tree = ocs_admin_build_tree( $subgroups, array( 
+    'title' => 'group_name',
+    'plid' => 'parent_group_id', 
+    'mlid' => 'group_id'));
+
+//    dpm( $tree, 'tree');
 
   $form = array_merge($form, _ocs_group_tree_form($tree));
 
@@ -411,17 +430,27 @@ function ocs_admin_group_title( $op, $group)
  *
  * @ingroup themeable
  */
-function theme_ocs_admin_group_form($variables) {
+function theme_ocs_admin_group_form($variables, $header = NULL) 
+{
+  
   $form = $variables['form'];
+
+  if ( ! isset( $header)) {
+      $header = array(
+        t('Group Name'),
+        t('Weight'),
+        array( 'data' => t('Operations'), 'colspan' => '3'),
+      );
+  }
+
+  return ocs_admin_tree_table_theme( $form, $header);
+}
+
+function ocs_admin_tree_table_theme( $form, $header)
+{
 
   drupal_add_tabledrag('menu-overview', 'match', 'parent', 'menu-plid', 'menu-plid', 'menu-mlid', TRUE, MENU_MAX_DEPTH - 1);
   drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
-
-  $header = array(
-    t('Group Name'),
-    t('Weight'),
-    array( 'data' => t('Operations'), 'colspan' => '3'),
-  );
 
   $rows = array();
   foreach (element_children($form) as $mlid) {
@@ -431,7 +460,6 @@ function theme_ocs_admin_group_form($variables) {
     dpm( $form[$mlid], 'form');
     */
       $element = &$form[$mlid];
-
       $operations = array();
       foreach( element_children( $element['operations']) as $op) {
           $operations[] = array( 'data' => drupal_render($element['operations'][$op]),
@@ -456,12 +484,65 @@ function theme_ocs_admin_group_form($variables) {
       $rows[] = $row;
     }
   }
-  $output = '';
   if (empty($rows)) {
     $rows[] = array(array('data' => $form['#empty_text'], 'colspan' => '7'));
   }
+  if ( isset($form['#footer'])) {
+    $rows[] = array(array('data' => $form['#footer'], 'colspan' => '7'));
+  }
+
+  $output = '<br>';
+  if ( isset( $form['#caption'])) {
+      $output .= '<h3>' . $form['#caption'] . '</h3>';
+  }
   $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
   $output .= drupal_render_children($form);
+  return $output;
+}
+
+function ocs_admin_table_theme( $form, $header)
+{
+
+  drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
+
+  $rows = array();
+  dpm( $form, 'form');
+  foreach ($form['#records'] as $key => $item) {
+      $element = &$form['#records'][$key];
+      $operations = array();
+      foreach( element_children( $element['operations']) as $op) {
+          $operations[] = array( 'data' => drupal_render($element['operations'][$op]),
+            'class' => array('menu-operations'));
+      }
+
+      // Add special classes to be used for tabledrag.js.
+      $element['weight']['#attributes']['class'] = array('menu-weight');
+
+      $row = array();
+      $row[] = theme( 'ocs_admin_group_overview', 
+            array( 'title' => $element['title'],
+                'name' => $element['name'],
+                'description' => $element['description']));
+
+      $row[] = drupal_render($element['weight']);
+      $row = array_merge( $row, $operations);
+
+      //$row = array_merge(array('data' => $row), $element['#attributes']);
+      $row['class'][] = 'draggable';
+      $rows[] = $row;
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' => $form['#empty_text'], 'colspan' => '7'));
+  }
+  if ( isset($form['#footer'])) {
+    $rows[] = array(array('data' => $form['#footer'], 'colspan' => '7'));
+  }
+
+  $output = '<br>';
+  if ( isset( $form['#caption'])) {
+      $output .= '<h3>' . $form['#caption'] . '</h3>';
+  }
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
   return $output;
 }
 

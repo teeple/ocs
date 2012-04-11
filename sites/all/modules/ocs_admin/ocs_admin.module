@@ -8,6 +8,7 @@ module_load_include( 'inc', 'ocs_admin', 'ocs_group');
 */
 function ocs_admin_menu() {
 
+    // for testing menu
     $items['helloworld'] = array(
         'title' => 'Hello World',
         'page callback' => 'drupal_get_form',
@@ -23,6 +24,8 @@ function ocs_admin_menu() {
         'type' => MENU_CALLBACK,
     );
 
+    // menu items for account management 
+
     $items['ocs_admin/account/add/%'] = array(
         'title' => 'Add New Account',
         'page callback' => 'ocs_admin_account_add',
@@ -37,6 +40,8 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
     );
+
+    // menu items for group management
 
     $items['ocs_admin/group/%group'] = array(
         'title' => 'Edit Group',
@@ -120,6 +125,8 @@ function ocs_admin_menu() {
         'file' => 'ocs_group.inc',
     );
 
+    // menu items for card management
+
     $items['ocs_admin/card/cardtype/%'] = array(
         'title' => 'Add Card Type',
         'page callback' => 'drupal_get_form',
@@ -128,6 +135,8 @@ function ocs_admin_menu() {
         'file' => 'ocs_card.inc',
     );
 
+    // menu items for product management
+
     $items['ocs_admin/card/product/%/add'] = array(
         'title' => 'Related Product',
         'page callback' => 'drupal_get_form',
@@ -135,6 +144,32 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_card.inc',
     );
+
+    // menu items for campaign management
+
+    $items['ocs_admin/campaign'] = array(
+        'title' => 'Campaign List',
+        'page callback' => 'ocs_admin_campaign_overview',
+        'access arguments' => array('access content'),
+        'file' => 'ocs_campaign.inc',
+    );
+
+    $items['ocs_admin/campaign/%/rule'] = array(
+        'title' => 'Campaign Rules',
+        'page callback' => 'ocs_admin_campaign_rule_page',
+        'page arguments' => array( 2),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_campaign.inc',
+    );
+
+    $items['ocs_admin/campaign/%/rule/event'] = array(
+        'title' => 'Add a New Event for the Campaign',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_campaign_event_form', 2),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_campaign.inc',
+    );
+
 
     return $items;
 }
@@ -152,6 +187,10 @@ function ocs_admin_theme()
         'ocs_admin_group_overview' => array(
             'file' => 'ocs_group.inc',
             'variables' => array( 'title' => NULL, 'name' => NULL, 'description' => NULL),
+        ),
+        'ocs_admin_campaign_rule_form' => array(
+            'file' => 'ocs_campaign.inc',
+            'render element' => 'form',
         ),
     );
 }
@@ -328,6 +367,7 @@ function group_load_all()
 
     return $groups;
 }
+
 
 
 /*
@@ -539,6 +579,51 @@ function ocs_admin_card_form_save( $cardtype)
 
   db_set_active( 'default');
   return 1;
+}
+
+/*
+    save OCS campaign condition
+*/
+function ocs_admin_campaign_condition_save( $campaign)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'campaign_id' => isset($campaign['campaign_id']) ? $campaign['campaign_id'] : NULL,
+        'parent_id' => isset($campaign['parent_id']) ? $campaign['parent_id'] : 0,
+        'cond_name' => isset($campaign['cond_name']) ? $campaign['cond_name'] : NULL,
+        'my_id' => isset($campaign['my_id']) ? $campaign['my_id'] : 0,
+        );
+
+    $status = db_merge( 'ocs_campaign_conditions')
+        ->key( array( 'my_id' => $campaign['my_id']))
+        ->fields( $fields)
+        ->execute();
+    dpm( $status, 'db_merge result');
+
+    db_set_active( 'default');
+}
+
+
+/*
+    save OCS campaign event
+*/
+function ocs_admin_campaign_event_save( $campaign)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'campaign_id' => isset($campaign['campaign_id']) ? $campaign['campaign_id'] : NULL,
+        'event_id' => isset($campaign['event_id']) ? $campaign['event_id'] : 0,
+        );
+
+    $status = db_merge( 'ocs_campaign_events')
+        ->key( array( 'event_id' => $campaign['event_id']))
+        ->fields( $fields)
+        ->execute();
+    dpm( $status, 'db_merge result');
+
+    db_set_active( 'default');
 }
 
 function ocs_admin_form_alter(&$form, &$form_state, $form_id)

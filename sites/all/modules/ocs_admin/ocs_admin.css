@@ -15,3 +15,20 @@
     text-align: center;
     width: 50px;
 }
+
+ul.action-links {
+      margin: 1em 0;
+        padding: 0 20px 0 20px; /* LTR */
+          list-style-type: none;
+            overflow: hidden;
+}
+ul.action-links li {
+      float: left; /* LTR */
+        margin: 0 3em 0 0; /* LTR */
+}
+ul.action-links a {
+      padding-left: 15px; /* LTR */
+        background: transparent url(images/add.png) no-repeat 0 center;
+          line-height: 30px;
+}
+
