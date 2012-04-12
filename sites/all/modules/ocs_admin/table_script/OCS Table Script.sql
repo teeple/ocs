@@ -388,7 +388,7 @@ select a.customer_id, a.customer_name, b.code_name, a.date_register
 -- -----------------------------------------------------
 create view ocs_product_view as
 select a.product_serial_no, a.product_desc,   a.product_name, 
-       a.product_status,    a.product_period, b.code_name
+       a.product_status,    a.product_period, a.product_tid, b.code_name
   from ocs_product a inner join ocs_code_sub b
  where a.product_status = b.sub_code
    and b.master_code = 'P100';

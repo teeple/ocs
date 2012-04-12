@@ -31,14 +31,15 @@ function ocs_admin_views_data() {
     $member = ocs_admin_table_group_member();
     $data = array_merge( $data, $member);
 
-    /*
-    $member = ocs_admin_card_type();
-    $data = array_merge( $data, $member);
+    $card = ocs_admin_card_type();
+    $data = array_merge( $data, $card);
 
+    /*
     $member = ocs_admin_product_card();
     $data = array_merge( $data, $member);
     */
-//    dpm( $data, 'view_data');
+
+//  dpm( $data, 'view_data');
 
     return $data;
 }    
@@ -338,6 +339,13 @@ function ocs_admin_table_product()
         'weight' => -10,
     );
 
+    $data['ocs_product_view']['table']['join'] = array(
+        'taxonomy_term_data' => array(
+            'left_field' => 'tid',
+            'field' => 'product_tid',
+        ),
+    );
+
     $data['ocs_product_view']['product_serial_no'] = array(
         'title' => t('Product Serial Number'),
         'help' => t('Product Serial No'),
@@ -445,7 +453,20 @@ function ocs_admin_table_product()
             'handler' => 'views_handler_argument_string',
         ),
     );
-    
+
+   $data['ocs_product_view']['taxonomy_term_data'] = array(
+        'title' => t('Taxonomy Term'),
+        'help' => t('Taxonomy Term for Product Type'),
+        'relationship' => array(
+            'base' => 'taxonomy_term_data',
+            'field' => 'product_tid',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Product Type Term'),
+            'database' => 'default',
+        ),
+    );
+
+ 
     return $data;
     
     
@@ -820,30 +841,6 @@ function ocs_admin_table_group_member()
 
 function ocs_admin_card_type()
 {
-        /*
-		$host = "newbiz.uange.com";
-		$uid = "root";
-		$pass = "root.123";
-		$db = "ocsdata";
-		
-		$conn = mysql_connect($host,$uid,$pass);
-		mysql_select_db($db,$conn);
-		
-		$mysql_query('select a.card_type, a.product_name, a.usable ' . 
-		             '  from (select ifnull(a.card_type, "AAAA") card_type, ' .
-		             '               b.product_name, ' .
-		             '               ifnull(a.usable, 0) usable ' .
-		             '          from ocsdata.ocs_card_product a right outer join ocsdata.ocs_product b ' .
-		             '            on a.product_id = b.product_serial_no) a ' .
-		             ' where a.card_type = "AAAA"');
-
-    $board_result=mysql_query($str_sql,$conn);
-    $card_type=mysql_result($card_type,0,0);
-		$product_name=mysql_result($product_name,0,1);
-		$usable=mysql_result($board_result,0,2);
-
-*/
-
     // Card Type
     $data['ocs_card_type']['table']['name'] = 'ocsdata.ocs_card_type';
     $data['ocs_card_type']['table']['group'] = t('OCS Card Type');
@@ -950,6 +947,17 @@ function ocs_admin_card_type()
 
 function ocs_admin_product_card()
 {
-	return $data;
+        /*
+        $mysql_query('select a.card_type, a.product_name, a.usable ' .
+                     '  from (select ifnull(a.card_type, "AAAA") card_type, ' .
+               '               b.product_name, ' .
+           '               ifnull(a.usable, 0) usable ' .
+          '          from ocsdata.ocs_card_product a right outer join ocsdata.ocs_product b ' .
+                     '            on a.product_id = b.product_serial_no) a ' .
+                           ' where a.card_type = "AAAA"');
+
+
+*/
+return $data;
 }    
 

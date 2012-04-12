@@ -625,42 +625,11 @@ function ocs_admin_campaign_event_save( $campaign)
 
     db_set_active( 'default');
 }
-
-function ocs_admin_form_alter(&$form, &$form_state, $form_id)
-{
-/*
-  if ($form_id == 'ocs_admin_card_form')
-  {
-	  if (ChkParamRule($form_state['input']['unit'], 'int') != 1) {
-			dpm('Invalid unit data!');
-	  	return 0;
-	  }
-  }
-  return 1;
-
-  if (ChkParamRule($cardtype['unit'], 'int') != 1){
-		dpm('Invalid unit data!');
-  	return 0;
-  }
-  
-  if (ChkParamRule($cardtype['active_period'], 'int') != 1){
-		dpm(' Invalid active period data!');
-  	return 0;
-  }
-  
-  if (ChkParamRule($cardtype['grace_period'], 'int') != 1) {
-		dpm('Invalid grace period data!');
-  	return 0;
-  }
-  
-  
-*/
-}
-
-/*
+    
+/*    
     Parameter Check
 */
-function ChkParamRule($obj, $rule)
+function chk_param_rule($obj, $rule)
 {
 	$chk = 1;
 	$obj = trim($obj);
