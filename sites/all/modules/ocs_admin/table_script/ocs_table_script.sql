@@ -378,7 +378,7 @@ DROP VIEW IF EXISTS `ocsdata`.`ocs_customer_view` ;
 DROP TABLE IF EXISTS `ocsdata`.`ocs_customer_view`;
 USE `ocsdata`;
 CREATE  OR REPLACE view ocs_customer_view as 
-select a.customer_id, a.customer_name, b.code_name, a.date_register
+select a.customer_id, a.customer_name, b.code_name, b.sub_code, a.date_register
   from ocs_customer a inner join ocs_code_sub b 
  where a.customer_type = b.sub_code;
 

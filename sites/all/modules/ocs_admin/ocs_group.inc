@@ -506,7 +506,7 @@ function ocs_admin_table_theme( $form, $header)
   drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
 
   $rows = array();
-  dpm( $form, 'form');
+  dpm( $form, 'table form');
   foreach ($form['#records'] as $key => $item) {
       $element = &$form['#records'][$key];
       $operations = array();
@@ -527,7 +527,7 @@ function ocs_admin_table_theme( $form, $header)
       $row[] = drupal_render($element['weight']);
       $row = array_merge( $row, $operations);
 
-      //$row = array_merge(array('data' => $row), $element['#attributes']);
+      $row = array_merge(array('data' => $row), $element['#attributes']);
       $row['class'][] = 'draggable';
       $rows[] = $row;
   }
