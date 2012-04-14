@@ -66,24 +66,35 @@ function ocs_admin_card_form( $form, &$form_state, $type, $cardtype)
     return $form;
 }
 
-function ocs_admin_product_card($form, &$form_state, $type, $cardtype) 
+function ocs_admin_card_form_validate( $form, &$form_state)
 {
+    $cardtype = $form_state['values'];
+    dpm($cardtype, 'card type');
+    if ( is_numeric( $cardtype['card_type'])) {
+         form_set_error('card type', t('You have to enter string values the card type.'));
+    }
+    
+    if ( ! is_numeric( $cardtype['unit'])) {
+         form_set_error('unit', t('You have to enter numeric values the unit.'));
+    }
 
-    $form['card_type'] = array(
-        '#type' => 'hidden',
-        '#value' => ($type == 'edit') ? $cardtype['card_type'] : NULL,
-    );
+    if ( ! is_numeric( $cardtype['active_period'])) {
+         form_set_error('active period', t('You have to enter numeric values the active period.'));
+    }
 
-		return $form;
+    if ( ! is_numeric( $cardtype['grace_peroid'])) {
+         form_set_error('grace period', t('You have to enter numeric values the grace period.'));
+    }
 }
 
-function ocs_admin_card_form_submit( $form, &$form_state)
+
+function ocs_admin_card_form_submin( $form, &$form_state )
 {
     $cardtype = $form_state['values'];
 
     if (ocs_admin_card_form_save($cardtype) != 0 ) {
 	    drupal_set_message( t('Your configuration has been saved.'));
-	    $form_state['redirect'] = 'ocs-card-type';
+	    $form_state['redirect'] = '/cardtype/cardtype';
     } else {
   
  	    $form['unit'] = array('#type' => 'textfield', '#value' => $cardtype['unit']);
