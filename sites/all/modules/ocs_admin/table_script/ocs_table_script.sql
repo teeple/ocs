@@ -34,7 +34,7 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_subscription` (
   `grace_expire_date` DATETIME NOT NULL ,
   `home_info` VARCHAR(32) NOT NULL ,
   `preferred_language` INT(11) NOT NULL ,
-  `notification_flag_set` INT(11) NOT NULL ,
+  `notification_flag_set` INT(11) NOT NULL, 
   PRIMARY KEY (`subscription_key`) )
 ENGINE = InnoDB;
 
@@ -52,6 +52,7 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_product` (
   `product_serial_no` VARCHAR(10) NULL,
   `product_status` VARCHAR(2) NULL COMMENT 'planned, designed, activated, disconnected' ,
   `product_period` DATETIME NULL ,
+  `product_tid`	INT(11) NULL,
   PRIMARY KEY (`product_name`) )
 ENGINE = InnoDB
 
@@ -66,6 +67,9 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_account` (
   `subscription_key` VARCHAR(24) NOT NULL ,
   `customer_id` VARCHAR(11) NOT NULL ,
   `product_id` INT(11) NOT NULL ,
+  `product_name`    VARCHAR(20) NOT NULL,
+  `card_no` VARCHAR(32) NOT NULL,
+  `card_type`   VARCHAR(4)  NOT NULL,
   PRIMARY KEY (`account_key`, `subscription_key`, `customer_id`, `product_id`) )
 ENGINE = InnoDB;
 
@@ -106,9 +110,9 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_call_history` (
   `destination` VARCHAR(32) NOT NULL ,
   `start_time` DATETIME NOT NULL ,
   `end_time` DATETIME NOT NULL ,
-  `usage` INT(11) NOT NULL ,
+  `usage` INT(11) NOT NULL default 0,
   `charging_type` INT(11) NOT NULL ,
-  `deducted_unit` INT(11) NOT NULL ,
+  `deducted_unit` INT(11) NOT NULL default 0,
   PRIMARY KEY (`subscription_key`) )
 ENGINE = InnoDB;
 
@@ -250,8 +254,11 @@ DROP TABLE IF EXISTS `ocsdata`.`ocs_group` ;
 
 CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group` (
   `group_id` INT(11) NOT NULL ,
-  `group_name` VARCHAR(24) NOT NULL ,
-  `parent_group` INT(11) NOT NULL ,
+  `parent_group_id`  INT(11) not NULL,
+  `service_type` INT(11) not null,
+  `master_number`   varchar(24) not null,   
+  `group_name` VARCHAR(64) not null ,
+  `ancestor_group_id` INT(11) NOT NULL ,
   PRIMARY KEY (`group_id`) )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -342,7 +349,6 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_product` (
   `usable` TINYINT(1) NULL DEFAULT 0 COMMENT '사용가능 여부(0:not usd, 1:use)' ,
   PRIMARY KEY (`card_type`, `product_id`) )
 ENGINE = InnoDB;
-
 
 /*******************************************************************************
 -- -----------------------------------------------------
@@ -10557,48 +10563,9 @@ insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period,
 insert into ocsdata.ocs_card_type (card_type, unit, active_period, grace_period, description) values ('AAAJ', 0, 0, 60, 'SkyPhone scratch (Skycall, D20)');
 
 -- -----------------------------------------------------
--- Table `ocsdata`.`ocs_card`
+-- OCS Card
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card` ;
+insert into ocsdata.ocs_card (card_no, card_type, pin_no, recharge_datetime, account_key, status) values ('10148103981', 'AAAA', '228560229896', '2012-04-01 00:01:19', '88935466', '1');
+insert into ocsdata.ocs_card (card_no, card_type, pin_no, recharge_datetime, account_key, status) values ('10154561945', 'AAAA', '894050829496', '2012-04-01 00:01:27', '88707188', '0');
+insert into ocsdata.ocs_card (card_no, card_type, pin_no, recharge_datetime, account_key, status) values ('10698241945', 'AAAA', '892342329496', '2012-04-01 00:01:27', '91100038', '0');
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card` (
-  `card_no` VARCHAR(32) NOT NULL COMMENT '카드번호' ,
-  `card_type` VARCHAR(4) NOT NULL ,
-  `pin_no` VARCHAR(32) NULL COMMENT 'PIN 번호' ,
-  `recharge_datetime` DATETIME NULL COMMENT '충전일시' ,
-  `account_key` VARCHAR(24) NULL COMMENT 'Account Key' ,
-  `status` VARCHAR(2) NULL DEFAULT 0 COMMENT '카드상태(IDLE, NOT USED, USED, ...)' ,
-  PRIMARY KEY (`card_no`) )
-ENGINE = InnoDB;
-
-CREATE UNIQUE INDEX `IDX_PIN_NO` ON `ocsdata`.`ocs_card` (`pin_no` ASC) ;
-
-CREATE INDEX `fk_ocs_recharge_ocs_card_type1` ON `ocsdata`.`ocs_card` (`card_type` ASC) ;
-
-USE `ocsdata` ;
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_card_added_service`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card_added_service` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_added_service` (
-  `card_type` VARCHAR(4) NOT NULL COMMENT '카드유형' ,
-  `start_date` DATE NOT NULL COMMENT '적용일시' ,
-  `end_date` DATE NULL COMMENT '종료일시' ,
-  `promotion_no` VARCHAR(16) NULL COMMENT 'pc에서 정의한 promotion 호출' ,
-  PRIMARY KEY (`card_type`, `start_date`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_product_card`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card_product` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_product` (
-  `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
-  `product_id` VARCHAR(45) NOT NULL COMMENT '상품 코드' ,
-  `usable` TINYINT(1) NULL DEFAULT 0 COMMENT '사용가능 여부(0:not usd, 1:use)' ,
-  PRIMARY KEY (`card_type`, `product_id`) )
-ENGINE = InnoDB;

@@ -61,12 +61,15 @@ function ocs_admin_menu() {
 
     // menu items for account management 
 
+    /* it's not used.
+        Panel 'ocs_account_form' shall be called instead
     $items['ocs_admin/account/add/%'] = array(
         'title' => 'Add New Account',
-        'page callback' => 'ocs_admin_account_add',
+        'page callback' => 'ocs_admin_account_add_page',
         'page arguments' => array(3),
         'access arguments' => array('access content'),
     );
+    */
 
     $items['ocs_admin/account/add/%/%ctools_js/%/%/%'] = array(
         'title' => 'Callback for adding a new account',
@@ -74,6 +77,22 @@ function ocs_admin_menu() {
         'page arguments' => array( 3, 4, 5, 6, 7),     // nojs/type/id/name i.e. customer/1/tom
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
+    );
+
+    $items['ocs_admin/account/%/delete'] = array(
+        'title' => 'Delete the Account',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_account_delete_confirm', 2),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_account.inc',
+    );
+
+    $items['ocs_admin/account/%/edit'] = array(
+        'title' => 'Edit the Account Information',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_account_edit_form', 2),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_account.inc',
     );
 
     // menu items for group management
@@ -160,7 +179,25 @@ function ocs_admin_menu() {
         'file' => 'ocs_group.inc',
     );
 
-    // menu items for card management
+     // OCS Product Card
+     $items['ocs_admin/card/product/card/%'] = array(
+        'title' => 'Connect product and card type',
+        'page callback' => 'ocs_admin_product_card_add',
+        'page arguments' => array(4),
+        'access arguments' => array('access content'),
+    );
+
+/*
+    $items['ocs_admin/card/product/%/add'] = array(
+        'title' => 'Related Product',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_product_card_form', 'add', 3),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_card.inc',
+    );
+*/
+
+    // menu items for add cardtype management
     $items['ocs_admin/card/cardtype/add'] = array(
         'title' => 'Add Card Type',
         'page callback' => 'drupal_get_form',
@@ -169,21 +206,11 @@ function ocs_admin_menu() {
         'file' => 'ocs_card.inc',
     );
 
-    // menu items for card management
-    $items['ocs_admin/card/cardtype/%/edit'] = array(
-        'title' => 'Add Card Type',
+    // menu items for edit cardtype management
+    $items['ocs_admin/card/cardtype/%cardtype/edit'] = array(
+        'title' => 'Edit Card Type',
         'page callback' => 'drupal_get_form',
         'page arguments' => array( 'ocs_admin_card_form', 'edit', 3),
-        'access arguments' => array('access content'),
-        'file' => 'ocs_card.inc',
-    );
-
-    // menu items for product management
-
-    $items['ocs_admin/card/product/%/add'] = array(
-        'title' => 'Related Product',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_product_card', 'add', 3),
         'access arguments' => array('access content'),
         'file' => 'ocs_card.inc',
     );
@@ -212,6 +239,16 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_campaign.inc',
     );
+
+    // menu items for counter management
+    $items['ocs_admin/account/%/counter/%/%/edit'] = array(
+        'title' => 'Edit Counter',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_counter_edit_form', 2, 4, 5),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_counter.inc',
+    );
+
 
 
     return $items;
@@ -483,182 +520,6 @@ function group_load_all()
     return $groups;
 }
 
-
-
-/*
-    save OCS Customer Group
-*/
-function ocs_admin_group_save( $group)
-{
-    db_set_active( 'ocsdb');
-
-    $fields = array( 
-        'group_id' => isset($group['group_id']) ? $group['group_id'] : NULL,
-        'ancestor_group_id' => isset($group['ancestor_group_id']) ? $group['ancestor_group_id'] : 0,
-        'parent_group_id' => isset($group['parent_group_id']) ? $group['parent_group_id'] : 0,
-        'group_name' => isset($group['group_name']) ? $group['group_name'] : NULL,
-        'service_type' => isset($group['service_type']) ? $group['service_type'] : 0,
-        );
-    if ( isset( $group['master_number']))
-        $fields['master_number'] = $group['master_number'];
-
-    if ( isset( $group['group_id'])) {
-        $status = db_merge( 'ocs_group')
-            ->key( array( 'group_id' => $group['group_id']))
-            ->fields( $fields)
-            ->execute();
-        dpm( $status, 'db_merge result');
-    }
-    else {
-        // insert
-        $options = array('return' => Database::RETURN_INSERT_ID);
-        $last_insert_id = db_insert( 'ocs_group', $options)
-            ->fields( $fields)
-            ->execute();
-        dpm( $last_insert_id, 'db_insert result');
-
-        // update ancestor_group_id
-        if ( $fields['ancestor_group_id'] == 0 && $last_insert_id > 0) {
-            $result = db_update( 'ocs_group')
-                ->fields( array(
-                    'ancestor_group_id' => $last_insert_id
-                ))
-                ->condition( 'group_id', $last_insert_id, '=')
-                ->execute();
-            dpm( $result, 'db_update result');
-        }
-    }
-
-    db_set_active( 'default');
-}
-
-function ocs_admin_group_delete( $group)
-{
-    db_set_active( 'ocsdb');
-
-    // delete the group and all subgroups
-    $status = db_delete( 'ocs_group')
-        ->condition( 'ancestor_group_id', $group['group_id'])
-        ->execute();
-    dpm( $status, 'db_delete result');
-
-    db_set_active( 'default');
-}
-
-function ocs_admin_subgroup_delete( $group)
-{
-    db_set_active( 'ocsdb');
-
-    // delete
-    $status = db_delete( 'ocs_group')
-        ->condition( 'group_id', $group['group_id'])
-        ->execute();
-    dpm( $status, 'db_delete result');
-
-    // update
-    $status = db_update( 'ocs_group')
-        ->fields( array(
-            'parent_group_id' => $group['parent_group_id']
-            ))
-        ->condition( 'ancestor_group_id', $group['ancestor_group_id'], '=')
-        ->condition( 'parent_group_id', $group['group_id'], '=')
-        ->execute();
-    dpm( $status, 'db_update result');
-
-    db_set_active( 'default');
-}
-
-/*
-    save OCS Customer Account
-*/
-function ocs_admin_account_save( $account)
-{
-    db_set_active( 'ocsdb');
-
-    $fields = array( 
-        'account_key' => isset($account['account_key']) ? $account['account_key'] : NULL,
-        'status' => 0,
-        'subscription_key' => isset($account['subscription_key']) ? $account['subscription_key'] : '0',
-        'customer_id' => isset($account['customer_id']) ? $account['customer_id'] : '0',
-        'product_id' => isset($account['product_id']) ? $account['product_id'] : 0,
-        );
-
-     // insert
-    $status = db_insert( 'ocs_account')
-        ->fields( $fields)
-        ->execute();
-    dpm( $status, 'db_insert result');
-
-    db_set_active( 'default');
-}
-
-/*
-    save OCS group member 
-*/
-function ocs_admin_member_save( $member)
-{
-    db_set_active( 'ocsdb');
-
-    $fields = array( 
-        'group_id' => isset($member['group_id']) ? $member['group_id'] : 0,
-        'ancestor_group_id' => isset($member['ancestor_group_id']) ? $member['ancestor_group_id'] : 0,
-        'account_key' => isset($member['account_key']) ? $member['account_key'] : NULL,
-        'extension' => isset($member['extension']) ? $member['extension'] : '000',
-        'limitation' => isset($member['limitation']) ? $member['limitation'] : 0,
-//        'usage' => isset($member['usage']) ? $member['usage'] : 0,
-//        'next_reset_date' => isset($member['next_reset_date']) ? $member['next_reset_date'] : 0,
-        );
-
-     // insert
-     $status = db_merge( 'ocs_group_member')
-        ->key( array( 'account_key' => $member['account_key']))
-        ->fields( $fields)
-        ->execute();
-    dpm( $status, 'db_merge result');
-
-    db_set_active( 'default');
-}
-
-
-/*
-    load member info
-*/
-function ocs_admin_member_load( $account_key)
-{
-   db_set_active('ocsdb');
-
-   $query = db_select( 'ocs_group_member', 'g');
-   $result = $query->fields( 'g')
-        ->condition( 'account_key', $account_key, '=')
-        ->execute();
-
-    $member = $result->fetchAssoc();
-    dpm( $member, 'fetched group member');
-
-    db_set_active('default');
-
-    return $member;
-}
-
-
-/*
-    delete member info
-*/
-function ocs_admin_member_delete( $account_key)
-{
-   db_set_active('ocsdb');
-
-   $result = db_delete( 'ocs_group_member')
-        ->condition( 'account_key', $account_key, '=')
-        ->execute();
-
-    dpm( $result, 'db_delete group member');
-
-    db_set_active('default');
-
-    return $result;
-}
-
 /*
     add card type
 */
@@ -768,3 +629,58 @@ function chk_param_rule($obj, $rule)
 		return $chk;
 	}
 }
+/*
+    load product info
+*/
+function ocs_admin_product_load( $product_id)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_product', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'product_serial_no', $product_id, '=')
+        ->execute() 
+        ->fetchAssoc();
+//    dpm( $result, 'fetched product');
+
+    db_set_active('default');
+
+    return $result;
+}
+
+/**
+* Implementation of hook_form_alter().
+*/
+function ocs_admin_form_alter(&$form, &$form_state, $form_id) 
+{
+
+    if($form_id == 'ocs_state_machine_node_form') {
+//        dpm( $form, 'form');
+        unset( $form['revision_information']);
+        unset( $form['additional_settings']);
+        unset( $form['author']);
+        unset( $form['options']);
+        unset( $form['comment_settings']);
+    }
+}
+
+
+/*
+load card type
+*/
+function cardtype_load( $cardtype )
+{
+    db_set_active('ocsdb');
+
+    $query = db_select( 'ocs_card_type', 'a');
+    $result = $query->fields( 'a')
+                    ->condition( 'card_type', $cardtype, '=')
+                    ->execute()
+                    ->fetchAssoc();
+   
+//    dpm( $result, 'fetched card type');
+    db_set_active('default');
+
+    return $result;
+}
+

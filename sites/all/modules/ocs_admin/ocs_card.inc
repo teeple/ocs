@@ -4,8 +4,8 @@
 ** add/edit card type information form
 */
 function ocs_admin_card_form( $form, &$form_state, $type, $cardtype)
-{
-//    dpm( $cardtype, 'Card Type');
+{    
+//    dpm($type, 'ocs_card_type');
 
     $form['card_type'] = array(
         '#type' => 'hidden',
@@ -103,4 +103,68 @@ function ocs_admin_card_form_submin( $form, &$form_state )
 	    $form['description'] = array('#value' => $cardtype['description']);
     }
 
+}
+
+/*
+    get subgroup list
+*/
+function ocs_admin_card_form_get_data( $cardtype )
+{
+    db_set_active('ocsdb');
+
+    // get group information
+    $query = db_select( 'ocs_card_type', 'a');
+    $result = $query->condition( 'a.card_type', $cardtype, '=')
+        ->fields( 'a')
+        ->execute()
+        ->fetchAllAssoc( 'card_type', PDO::FETCH_ASSOC);
+
+    db_set_active( 'default');
+
+    return $result;
+}
+
+function ocs_admin_product_card_add( $form, &$form_state, $type, $product_card)
+{    
+//    dpm($type, 'ocs_card_type');
+
+    $form['product_card'] = array(
+        '#type' => 'hidden',
+        '#value' => ($type == 'edit') ? $product_card['card_type'] : NULL,
+    );
+
+    $form['card_type'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Card Type',
+        '#maxlength' => 4,
+        '#size' => 4,
+        '#description' => t('Select card type'),
+        '#default_value' => ($type == 'edit') ? $product_card['card_type'] : NULL,
+    );
+
+    $form['product_id'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Product ID',
+        '#maxlength' => 45,
+        '#size' => 45,
+        '#description' => t('Select Product ID'),
+        '#default_value' => ($type == 'edit') ? $product_card['product_id'] : NULL,
+    );
+
+    $form['usable'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Usable',
+        '#maxlength' => 1,
+        '#size' => 1,
+        '#description' => t('Select Usable'),
+        '#default_value' => ($type == 'edit') ? $product_card['usable'] : NULL,
+    );
+
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    return $form;
 }

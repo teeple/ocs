@@ -12,6 +12,15 @@ function ocs_admin_views_data() {
 
     $account = ocs_admin_table_account();
     $data = array_merge( $data, $account);
+
+    $info = ocs_admin_table_subscription();
+    $data = array_merge( $data, $info);
+
+    $info = ocs_admin_table_counter_name();
+    $data = array_merge( $data, $info);
+    
+    $info = ocs_admin_table_counter();
+    $data = array_merge( $data, $info);
     
     $service = ocs_admin_table_service_type();
     $data = array_merge( $data, $service);
@@ -59,41 +68,15 @@ function ocs_admin_table_customer()
         'weight' => -10,
     );
 
-    $data['ocs_customer']['customer_id'] = array(
+    $data['ocs_customer']['customer_id'] = _get_numeric_field( array(
         'title' => t('Customer ID'),
         'help' => t('Customer\' ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_customer']['customer_name'] = array(
+    $data['ocs_customer']['customer_name'] = _get_string_field( array(
         'title' => t('Customer Name'),
         'help' => t('Customer Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     return $data;
 }    
@@ -119,60 +102,32 @@ function ocs_admin_table_account()
         'customer' => array(
             'left_field' => 'customer_id',
             'field' => 'customer_id'
-        )
+        ),
+        'subscription' => array(
+            'left_field' => 'subscription_key',
+            'field' => 'subscription_key',
+        ),
+        'counter' => array(
+            'left_field' => 'subscription_key',
+            'field' => 'subscription_key',
+        ),
     );
 
-    $data['ocs_account']['customer_id'] = array(
+    $data['ocs_account']['customer_id'] = _get_string_field( array(
         'title' => t('Customer ID'),
         'help' => t('Customer ID of this account'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
 
-    $data['ocs_account']['account_key'] = array(
+    $data['ocs_account']['account_key'] = _get_string_field( array(
         'title' => t('Account Key'),
         'help' => t('Account Key value such as MSISDN, User Name and etc'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_account']['service_id'] = array(
+    $data['ocs_account']['service_id'] = _get_numeric_field( array(
         'title' => t('Service Type ID'),
         'help' => t('Service Type ID such as Mobile, IPTV, VoIP and etc'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
     $data['ocs_account']['service_type'] = array(
         'title' => t('Service Type '),
@@ -196,6 +151,28 @@ function ocs_admin_table_account()
         ),
     );
 
+    $data['ocs_account']['subscription_key'] = array(
+        'title' => t('Subscription'),
+        'help' => t('Subscription data for this account'),
+        'relationship' => array(
+            'base' => 'ocs_subscription',
+            'field' => 'subscription_key',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Subscription'),
+        ),
+    );
+
+    $data['ocs_account']['counter'] = array(
+        'title' => t('Counter'),
+        'help' => t('Counter values for this account'),
+        'relationship' => array(
+            'base' => 'ocs_counter',
+            'field' => 'subscription_key',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Counter'),
+        ),
+    );
+
     return $data;
 }    
 
@@ -214,38 +191,15 @@ function ocs_admin_table_service_type()
         'weight' => -10,
     );
 
-    $data['service_type']['service_id'] = array(
+    $data['service_type']['service_id'] = _get_numeric_field( array(
         'title' => t('Service ID'),
         'help' => t('Service Type ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['service_type']['service_name'] = array(
+    $data['service_type']['service_name'] = _get_string_field( array(
         'title' => t('Service Name'),
         'help' => t('Service Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     return $data;
 }    
@@ -265,83 +219,30 @@ function ocs_admin_table_customer_view()
         'weight' => -10,
     );
 
-    $data['ocs_customer_view']['customer_id'] = array(
+    $data['ocs_customer_view']['customer_id'] = _get_string_field( array(
         'title' => t('Customer ID'),
         'help' => t('Customer unique ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['ocs_customer_view']['customer_name'] = array(
+    $data['ocs_customer_view']['customer_name'] = _get_string_field( array(
         'title' => t('Customer Name'),
         'help' => t('Customer Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['ocs_customer_view']['code_name'] = array(
+    $data['ocs_customer_view']['code_name'] = _get_string_field( array(
         'title' => t('Customer Type'),
         'help' => t('Customer Type (ocs_code_master : B302)'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['ocs_customer_view']['sub_code'] = array(
+    $data['ocs_customer_view']['sub_code'] = _get_numeric_field( array(
         'title' => t('Customer Type Code'),
         'help' => t('Customer Type Code (ocs_code_master : B302)'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_customer_view']['date_register'] = array(
+    $data['ocs_customer_view']['date_register'] = _get_string_field( array(
         'title' => t('Register Date'),
         'help' => t('Register Date'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
     return $data;
 }    
@@ -366,113 +267,35 @@ function ocs_admin_table_product_view()
         ),
     );
 
-    $data['ocs_product_view']['product_serial_no'] = array(
+    $data['ocs_product_view']['product_serial_no'] = _get_numeric_field( array(
         'title' => t('Product Serial Number'),
         'help' => t('Product Serial No'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product_view']['product_name'] = array(
+    $data['ocs_product_view']['product_name'] = _get_string_field( array(
         'title' => t('Product Name'),
         'help' => t('Product Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product_view']['product_desc'] = array(
+    $data['ocs_product_view']['product_desc'] = _get_string_field( array(
         'title' => t('Product Description'),
         'help' => t('Product Description'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort_string',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product_view']['product_status'] = array(
+    $data['ocs_product_view']['product_status'] = _get_string_field( array(
         'title' => t('Product Status'),
         'help' => t('Product Status'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product_view']['product_period'] = array(
+    $data['ocs_product_view']['product_period'] = _get_datetime_field( array(
         'title' => t('Product Period'),
         'help' => t('Product Period'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_date',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort_date',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_date',
-        ),
-    );
+    ));
 
-    $data['ocs_product_view']['code_name'] = array(
+    $data['ocs_product_view']['code_name'] = _get_string_field( array(
         'title' => t('Code Name'),
         'help' => t('Code Name(Product Status : P101)'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort_string',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
    $data['ocs_product_view']['taxonomy_term_data'] = array(
         'title' => t('Taxonomy Term'),
@@ -581,74 +404,25 @@ function ocs_admin_table_account_key_view()
         'weight' => -10,
     );
 
-    $data['ocs_account_key_view']['account_key'] = array(
+    $data['ocs_account_key_view']['account_key'] = _get_numeric_field( array(
         'title' => t('OCS Account key'),
-        'help' => t('OCS Account key'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+        'help' => t('OCS Account key (MSISDN)'),
+    ));
 
-    $data['ocs_account_key_view']['account_key_type'] = array(
+    $data['ocs_account_key_view']['account_key_type'] = _get_string_field( array(
         'title' => t('OCS Account Key Type'),
-        'help' => t('OCS Account Key Type'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+        'help' => t('Account Key Type: Gold, Silver and Bronze'),
+    ));
 
-    $data['ocs_account_key_view']['account_key_name'] = array(
+    $data['ocs_account_key_view']['account_key_name'] = _get_string_field( array(
         'title' => t('OCS Account Key Type Name'),
-        'help' => t('OCS Account Key Type Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+        'help' => t('Account Key Type Name : Gold, Silver and Bronze'),
+    ));
 
-    $data['ocs_account_key_view']['sales_flag'] = array(
+    $data['ocs_account_key_view']['sales_flag'] = _get_string_field( array(
         'title' => t('OCS Account Key Status'),
-        'help' => t('OCS Account Key Status'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+        'help' => t('Account Key Status: Used, Not Used'),
+    ));
     // End ocs_account_key_view
 
     return $data;
@@ -667,71 +441,25 @@ function ocs_admin_table_group()
         'weight' => -10,
     );
 
-    $data['ocs_group']['group_id'] = array(
+    $data['ocs_group']['group_id'] = _get_numeric_field( array(
         'title' => t('Group ID'),
         'help' => t('Group ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['ocs_group']['parent_group_id'] = array(
+    $data['ocs_group']['parent_group_id'] = _get_numeric_field( array(
         'title' => t('Parent Group ID'),
         'help' => t('Parent Group ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-    );
+    ));
 
-    $data['ocs_group']['group_name'] = array(
+    $data['ocs_group']['group_name'] = _get_string_field( array(
         'title' => t('Group Name'),
         'help' => t('Group Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_group']['master_number'] = array(
+    $data['ocs_group']['master_number'] = _get_string_field( array(
         'title' => t('Master Number'),
         'help' => t('Master Number'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     return $data;
 }
@@ -756,95 +484,30 @@ function ocs_admin_table_group_member()
         )
     );
 
-    $data['ocs_group_member']['account_key'] = array(
+    $data['ocs_group_member']['account_key'] = _get_string_field( array(
         'title' => t('Account Key'),
         'help' => t('Account Key (MSISDN, User ID)'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_group_member']['group_id'] = array(
+    $data['ocs_group_member']['group_id'] = _get_numeric_field( array(
         'title' => t('Group ID'),
         'help' => t('Group ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_group_member']['extension'] = array(
+    $data['ocs_group_member']['extension'] = _get_string_field( array(
         'title' => t('VPN extension'),
         'help' => t('VPN extension (3~4 digits)'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_group_member']['limitation'] = array(
+    $data['ocs_group_member']['limitation'] = _get_numeric_field( array(
         'title' => t('Usage Limitation'),
         'help' => t('Usage Limitation'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_group_member']['usage'] = array(
+    $data['ocs_group_member']['usage'] = _get_numeric_field( array(
         'title' => t('Current Usage'),
         'help' => t('Current Usage'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
     $data['ocs_group_member']['group'] = array(
         'title' => t('Group'),
@@ -873,95 +536,30 @@ function ocs_admin_card_type()
         'weight' => -10,
     );
 
-    $data['ocs_card_type']['card_type'] = array(
+    $data['ocs_card_type']['card_type'] = _get_string_field( array(
         'title' => t('Card Type'),
         'help' => t('Card Type'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_card_type']['unit'] = array(
+    $data['ocs_card_type']['unit'] = _get_numeric_field( array(
         'title' => t('Unit'),
         'help' => t('Card unit'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_card_type']['active_period'] = array(
+    $data['ocs_card_type']['active_period'] = _get_numeric_field( array(
         'title' => t('Active Period'),
         'help' => t('Active Period'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_card_type']['grace_period'] = array(
+    $data['ocs_card_type']['grace_period'] = _get_numeric_field( array(
         'title' => t('Grace Period'),
         'help' => t('Grace Period'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_numeric',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_numeric',
-        ),
-    );
+    ));
 
-    $data['ocs_card_type']['description'] = array(
+    $data['ocs_card_type']['description'] = _get_string_field( array(
         'title' => t('Description'),
         'help' => t('Description'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     return $data;
 }
@@ -978,59 +576,20 @@ function ocs_admin_product()
         'weight' => -10,
     );
 
-    $data['ocs_product']['product_serial_no'] = array(
+    $data['ocs_product']['product_serial_no'] = _get_string_field( array(
         'title' => t('Product ID'),
         'help' => t('Product ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product']['product_name'] = array(
+    $data['ocs_product']['product_name'] = _get_string_field( array(
         'title' => t('Product Name'),
         'help' => t('Product Name'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product']['description'] = array(
+    $data['ocs_product']['description'] = _get_string_field( array(
         'title' => t('Product Description'),
         'help' => t('Product Description'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     $data['ocs_product']['serial'] = array(
         'title' => t('Product ID'),
@@ -1074,60 +633,21 @@ function ocs_admin_product_card()
     );
 */
 
-    $data['ocs_product_card']['card_type'] = array(
+    $data['ocs_product_card']['card_type'] = _get_string_field( array(
         'title' => t('Card Type'),
         'help' => t('Card Type'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
 
-    $data['ocs_product_card']['product_id'] = array(
+    $data['ocs_product_card']['product_id'] = _get_string_field( array(
         'title' => t('Product ID'),
         'help' => t('Product ID'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_product_card']['usable'] = array(
+    $data['ocs_product_card']['usable'] = _get_string_field( array(
         'title' => t('Usable'),
         'help' => t('Usable'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
     $data['ocs_product_card']['product_name'] = array(
         'title' => t('Product Card Serial No'),
@@ -1158,64 +678,168 @@ function ocs_admin_card()
         'weight' => -10,
     );
 
-    $data['ocs_card']['card_no'] = array(
+    $data['ocs_card']['card_no'] = _get_string_field( array(
         'title' => t('Card No'),
         'help' => t('Card No'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
 
-    $data['ocs_card']['card_type'] = array(
+    $data['ocs_card']['card_type'] = _get_string_field( array(
         'title' => t('Card Type'),
         'help' => t('Card Type'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
-        ),
-    );
+    ));
 
-    $data['ocs_card']['pin_no'] = array(
+    $data['ocs_card']['pin_no'] = _get_string_field( array(
         'title' => t('PIN Number'),
         'help' => t('PIN Number'),
+    ));
+
+    $data['ocs_card']['recharge_datetime'] = _get_datetime_field( array(
+        'title' => t('Recharge DateTime'),
+        'help' => t('Recharge DateTime'),
+    ));
+
+
+    $data['ocs_card']['account_key'] = _get_string_field( array(
+        'title' => t('Account Key'),
+        'help' => t('Account Key'),
+    ));
+
+    $data['ocs_card']['status'] = _get_string_field( array(
+        'title' => t('Status'),
+        'help' => t('Satus'),
+    ));
+    return $data;
+	
+}
+
+function ocs_admin_table_subscription() 
+{
+    // ocs_subscription
+    $data['ocs_subscription']['table']['name'] = 'ocsdata.ocs_subscription';
+    $data['ocs_subscription']['table']['group'] = t('OCS Subscription');
+    $data['ocs_subscription']['table']['base'] = array(
+        'field' => 'subscription_key',
+        'title' => t('OCS Subscription'),
+        'help' => t('Account Subscription'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_subscription']['subscription_key'] = _get_numeric_field( array(
+        'title' => t('Subscription Key'),
+        'help' => t('Key for subscription table'),
+    ));
+
+
+    $data['ocs_subscription']['subscription_type'] = _get_string_field( array(
+        'title' => t('Subscription Type'),
+        'help' => t('Subscription Type'),
+    ));
+
+    $data['ocs_subscription']['charging_type'] = _get_numeric_field( array(
+        'title' => t('Charging Type'),
+        'help' => t('Charging Type'),
+    ));
+
+    $data['ocs_subscription']['status'] = _get_numeric_field( array(
+        'title' => t('Subscription Status'),
+        'help' => t('Subscription Status'),
+    ));
+
+    $data['ocs_subscription']['active_expire_date'] = _get_datetime_field( array(
+        'title' => t('Active Status Expiration DateTime'),
+        'help' => t('Active Status Expiration DateTime'),
+    ));
+
+    $data['ocs_subscription']['grace_expire_date'] = _get_datetime_field( array(
+        'title' => t('Grace Status Expiration DateTime'),
+        'help' => t('Grace Status Expiration DateTime'),
+    ));
+
+
+    $data['ocs_subscription']['preferred_language'] = _get_numeric_field( array(
+        'title' => t('Preferred Language'),
+        'help' => t('Preferred Language'),
+    ));
+
+    $data['ocs_subscription']['notification_flag_set'] = _get_numeric_field( array(
+        'title' => t('Notification Flag'),
+        'help' => t('Notification Flag'),
+    ));
+    return $data;
+	
+}
+
+
+function ocs_admin_table_counter_name() 
+{
+    // ocs_counter_name
+    $data['ocs_counter_name']['table']['name'] = 'ocsdata.ocs_counter_name';
+    $data['ocs_counter_name']['table']['group'] = t('OCS Counter Name');
+    $data['ocs_counter_name']['table']['base'] = array(
+        'field' => 'counter_id',
+        'title' => t('OCS Counter Name'),
+        'help' => t('Counter Name'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_counter_name']['counter_id'] = _get_numeric_field( array(
+        'title' => t('Counter ID'),
+        'help' => t('Counter ID'),
+    ));
+
+
+    $data['ocs_counter_name']['counter_name'] = _get_string_field( array(
+        'title' => t('Counter Name'),
+        'help' => t('Counter Name'),
+    ));
+
+    $data['ocs_counter_name']['counter_desc'] = _get_string_field( array(
+        'title' => t('Counter Description'),
+        'help' => t('Counter Description'),
+    ));
+
+    $data['ocs_counter_name']['counter_type'] = _get_numeric_field( array(
+        'title' => t('Counter Type'),
+        'help' => t('Counter Type'),
+    ));
+
+    $data['ocs_counter_name']['counter_scale'] = _get_numeric_field( array(
+        'title' => t('Counter Scale'),
+        'help' => t('Counter Scale'),
+    ));
+
+    return $data;
+	
+}
+
+
+function _get_numeric_field( $info)
+{
+    $default_value = array(
         'field' => array(
             'handler' => 'views_handler_field',
             'click sortable' => TRUE,
         ),
         'filter' => array( 
-            'handler' => 'views_handler_filter_string',
+            'handler' => 'views_handler_filter_numeric',
         ),
         'sort' => array( 
             'handler' => 'views_handler_sort',
         ),
         'argument' => array( 
-            'handler' => 'views_handler_argument_string',
+            'handler' => 'views_handler_argument_numeric',
         ),
     );
 
-    $data['ocs_card']['recharge_datetime'] = array(
-        'title' => t('Recharge DateTime'),
-        'help' => t('Recharge DateTime'),
+    return array_merge( $default_value, $info);
+}
+
+function _get_datetime_field( $info)
+{
+    $default_value = array(
         'field' => array(
             'handler' => 'views_handler_field',
             'click sortable' => TRUE,
@@ -1231,10 +855,12 @@ function ocs_admin_card()
         ),
     );
 
+    return array_merge( $default_value, $info);
+}
 
-    $data['ocs_card']['account_key'] = array(
-        'title' => t('Account Key'),
-        'help' => t('Account Key'),
+function _get_string_field( $info)
+{
+    $default_value = array(
         'field' => array(
             'handler' => 'views_handler_field',
             'click sortable' => TRUE,
@@ -1250,23 +876,75 @@ function ocs_admin_card()
         ),
     );
 
-    $data['ocs_card']['status'] = array(
-        'title' => t('Status'),
-        'help' => t('Satus'),
-        'field' => array(
-            'handler' => 'views_handler_field',
-            'click sortable' => TRUE,
-        ),
-        'filter' => array( 
-            'handler' => 'views_handler_filter_string',
-        ),
-        'sort' => array( 
-            'handler' => 'views_handler_sort',
-        ),
-        'argument' => array( 
-            'handler' => 'views_handler_argument_string',
+    return array_merge( $default_value, $info);
+}
+
+function ocs_admin_table_counter() 
+{
+    // ocs_counter
+    $data['ocs_counter']['table']['name'] = 'ocsdata.ocs_counter';
+    $data['ocs_counter']['table']['group'] = t('OCS Counter');
+    $data['ocs_counter']['table']['base'] = array(
+        'field' => 'subscription_key',
+        'title' => t('OCS Counter'),
+        'help' => t('OCS Counter'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_counter']['table']['join'] = array(
+        'counter_name' => array(
+            'left_field' => 'counter_id',
+            'field' => 'counter_id',
         ),
     );
+
+    $data['ocs_counter']['subscription_key'] = _get_numeric_field( array( 
+        'title'=> t('Subscription Key'), 
+        'help' => t('Subscription Key')));
+    $data['ocs_counter']['counter_id'] = _get_numeric_field( array(
+        'title' => t('Counter ID'), 
+        'help' => t('Counter ID')));
+    $data['ocs_counter']['counter_value'] = _get_numeric_field( array(
+        'title' => t('Counter Value'), 
+        'help' => t('Counter Value')));
+    $data['ocs_counter']['counter_time_stamp'] = _get_numeric_field(array(
+        'title' => t('Counter Time Stamp'), 
+        'help' => t('Counter Time Stamp')));
+    $data['ocs_counter']['counter_expire'] = _get_numeric_field( array(
+        'title' => t('Counter Expire'), 
+        'help' => t('Counter Expire')));
+    $data['ocs_counter']['counter_deposit'] = _get_numeric_field( array(
+        'title' => t('Counter Deposit'), 
+        'help' => t('Counter Deposit')));
+    $data['ocs_counter']['deposit_time'] = _get_numeric_field( array(
+        'title' => t('Deposit Time '), 
+        'help' => t('Deposit Time')));
+    $data['ocs_counter']['deposit_count'] = _get_numeric_field( array(
+        'title' => t('Deposit Count'), 
+        'help' => t('Deposit Count')));
+    $data['ocs_counter']['counter_state'] = _get_numeric_field( array(
+        'title' => t('Counter State'), 
+        'help' => t('Counter State')));
+    $data['ocs_counter']['counter_max_value'] = _get_numeric_field( array(
+        'title' => t('Counter Max Value'), 
+        'help' => t('Counter Max Value')));
+    $data['ocs_counter']['counter_value2'] = _get_numeric_field( array(
+        'title' => t('Counter Value 2'), 
+        'help' => t('Counter Value 2')));
+
+    $data['ocs_counter']['counter_name'] = array(
+        'title' => t('Counter Name'),
+        'help' => t('Counter Name'),
+        'relationship' => array(
+            'base' => 'ocs_counter_name',
+            'field' => 'counter_id',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Counter Name')
+        ),
+    );
+
+
     return $data;
 	
 }

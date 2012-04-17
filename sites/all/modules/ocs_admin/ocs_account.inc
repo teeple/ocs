@@ -9,8 +9,9 @@
     ocs_admin_account_add_form_panel : panel version
     ocs_admin_account_add_form_innertable : inner table version
 */
-function ocs_admin_account_add( $impl = NULL, $arg = NULL, $init = TRUE) 
+function ocs_admin_account_add_page( $impl = NULL, $arg = NULL, $init = TRUE) 
 {
+    dpm( $impl, 'ocs_admin_account_add_page');
     if ( $arg ) {
         foreach( $arg as $key => $value) {
             $_SESSION['ocs_admin_account_add'][$key] = $value;
@@ -48,7 +49,7 @@ function ocs_account_select( $impl, $js = NULL, $type = 'customer', $id = NULL, 
         $type . '_name' => $name,
         ); 
 
-    $output = ocs_admin_account_add( $impl, $arg);
+    $output = ocs_admin_account_add_page( $impl, $arg);
 
     if ( $js) {
         ctools_include('ajax');
@@ -195,18 +196,36 @@ function ocs_admin_account_add_form_panel( $form, &$form_state, $arg=NULL)
 
 function ocs_admin_account_add_form_panel_validate( $form, &$form_state)
 {
-    dpm( $form_state, 'validate: ');
+//    dpm( $form_state, 'validate: ');
+
+    // check parameters
+    $account_key = ocs_admin_account_key_load( $form_state['values']['account_key']);
+    if ( ! $account_key) {
+        form_set_error( 'account_key', 'Invalid account key');
+    }
+
+    $customer_id = ocs_admin_customer_load( $form_state['values']['customer_id']);
+    if ( ! $customer_id) {
+        form_set_error( 'customer_id', 'Invalid customer ID');
+    }
+
+    $product_id = ocs_admin_product_load( $form_state['values']['product_id']);
+    if ( ! $product_id) {
+        form_set_error( 'product_id', 'Invalid product ID');
+    }
 }
 
 function ocs_admin_account_add_form_panel_submit( $form, &$form_state)
 {
-    $form_state['redirect'] = 'ocs-account';
+    $form_state['redirect'] = 'ocs_admin/account';
     dpm( $form_state, 'submit: ');
 
     if ( $form_state['values']['op'] == 'Confirm') {
         // save to DB
         dsm( 'confirmed: ');
-        ocs_admin_account_save( $form_state['values']);
+        if ( ocs_admin_account_add( $form_state['values'])) {
+            drupal_set_message( 'A new account is created.');
+        }
     }
 }
 
@@ -219,6 +238,7 @@ function ocs_admin_form_ocs_admin_account_add_form_panel_alter( &$form, &$form_s
 /*
 ** save to DB
 */
+/*
 function ocs_admin_db_account_add( $values) 
 {
     db_set_active('ocsdb');
@@ -247,6 +267,7 @@ function ocs_admin_db_account_add( $values)
 
     db_set_active('default');
  }
+ */
 
 /* 
 ** build form for adding account
@@ -579,6 +600,331 @@ function ocs_admin_account_add_form_popup( $form, &$form_state, $arg = NULL)
 function ocs_admin_account_add_form_submit( $form, &$form_state) 
 {
     kpr( $form_state, TRUE);
+}
+
+/*
+** delete an account
+*/
+function ocs_admin_account_delete_confirm( $form, &$form_state, $account_key)
+{
+    $form['#account_key'] = $account_key;
+    $caption = '<p>' . 
+            t('<strong>Warning:</strong> The account "%key" will be deleted.',
+                array( '%key' => $account_key)) .
+            '</p>';
+
+    $caption .= '<p>'. t('This action cannot be undone.') . '</p>';
+
+    return confirm_form( $form, t('Are you sure to delete the account "%key"?',
+        array( '%key' => $account_key)),
+        'ocs_admin/account',
+        $caption, t('Delete'));
+}
+
+function ocs_admin_account_delete_confirm_submit( $form, &$form_state)
+{
+    $account_key = $form['#account_key'];
+    ocs_admin_account_delete( $account_key);
+
+    $t_args = array( '%key' => $account_key);
+    drupal_set_message( t('The account %key has been deleted.', $t_args));
+    watchdog( 'ocs_admin', 'Deleted the account %key.', $t_args, WATCHDOG_NOTICE);
+
+    $form_state['redirect'] = 'ocs_admin/account';
+}
+
+function ocs_admin_account_edit_form( $form, &$form_state, $account_key)
+{
+    $form['account_key_markup'] = array(
+        '#type' => 'item',
+        '#title' => 'Account Key',
+        '#markup' => $account_key,
+    );
+
+    $form['account_key'] = array(
+        '#type' => 'hidden',
+        '#value' => $account_key,
+    );
+
+    $form['subscription_key'] = array(
+        '#type' => 'hidden',
+        '#value' => $account_key,
+    );
+
+    $subs = ocs_admin_subscription_load( $account_key);
+    $form['#subscription'] = $subs;
+
+    $form['subscription_type'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Subscription Type',
+        '#description' => 'Enter the subscription type',
+        '#default_value' => $subs['subscription_type'],
+    );
+
+    $form['charging_type'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Charging Type',
+        '#description' => 'Enter the charging type',
+        '#default_value' => $subs['charging_type'],
+    );
+
+    $form['active_expire_date'] = array(
+        '#type' => 'date',
+        '#title' => 'Active Status Expire Date',
+        '#description' => 'Enter the new expiration date',
+        '#default_value' => date_parse( $subs['active_expire_date']),
+    );
+
+    $form['grace_expire_date'] = array(
+        '#type' => 'date',
+        '#title' => 'Grace Status Expire Date',
+        '#description' => 'Enter the new expiration date',
+        '#default_value' => date_parse( $subs['grace_expire_date']),
+    );
+
+    $form['notification_flag_set'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Notification Flag',
+        '#description' => 'Enter the new Notification Flag',
+        '#default_value' => $subs['notification_flag_set'],
+    );
+
+    $form['preferred_language'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Preferred Language',
+        '#description' => 'Select preferred language type',
+        '#default_value' => $subs['preferred_language'],
+    );
+
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    return $form;
+}
+
+
+/*
+    submit account info
+*/
+function ocs_admin_account_edit_form_submit( $form, &$form_state) 
+{
+    if ( $form_state['values']['op'] == 'Save') {
+        $subs = $form['#subscription'];
+
+        // update changed value
+        foreach( $form_state['values'] as $key => $value) {
+            if ( isset( $subs[ $key ])) {
+                if ( $form[ $key]['#type'] == 'date') {
+                    // date format
+                    $subs[ $key] = sprintf( '%04d-%02d-%02d', $value['year'], $value['month'], $value['day']);
+                }
+                else {
+                    $subs[ $key] = $value;
+                }
+            }
+        }
+
+        ocs_admin_subscription_save( $subs);
+    }
+    
+    $form_state['redirect'] = 'ocs_admin/account/all/' . $form_state['values']['account_key'];
+}
+
+/*
+load counter
+*/
+function ocs_admin_subscription_load( $subscription_key)
+{
+    db_set_active('ocsdb');
+
+    $query = db_select( 'ocs_subscription', 'a');
+    $result = $query->fields( 'a')
+                    ->condition( 'subscription_key', $subscription_key, '=')
+                    ->execute()
+                    ->fetchAssoc();
+   
+    db_set_active('default');
+
+    return $result;
+}
+
+/*
+save counter
+*/
+function ocs_admin_subscription_save( $data)
+{
+    db_set_active('ocsdb');
+
+    $result = db_update( 'ocs_subscription')
+        ->fields( $data)
+        ->condition( 'subscription_key', $data['subscription_key'], '=')
+        ->execute();
+    dpm( $result, 'db_update ocs_counter result');
+
+    db_set_active('default');
+    
+    return $result;
+}
+
+
+/*
+    save OCS Customer Account
+*/
+function ocs_admin_account_add( $account)
+{
+    dpm( debug_backtrace(), 'backtrace');
+
+    if ( ! isset($account['account_key']) || ! isset($account['customer_id'])  ||
+        ! isset($account['product_id'])) {
+        drupal_set_message( 'Insufficient parameters to create an account', 'warning');
+        return FALSE;
+    }
+
+    db_set_active( 'ocsdb');
+
+    $txn = db_transaction();
+
+    try {
+        // insert record in ocs_subscription table
+        $default_value = array(
+            'subscription_key' => $account['account_key'],
+            'subscription_type' => 0,
+            'charging_type' => 0,
+            'status' => 0,
+            'active_expire_date' => date("Y-m-d H:i:s", time()),
+            'grace_expire_date' => date("Y-m-d H:i:s", time()),
+            'home_info' => '',
+            'preferred_language' => 0,
+            'notification_flag_set' => 0,
+        );
+
+        $result = db_insert( 'ocs_subscription')
+            ->fields( $default_value)
+            ->execute();
+        dpm( $result, 'db_insert ocs_subscription result');
+
+        // insert record in ocs_account table
+        $fields = array( 
+            'account_key' => $account['account_key'],
+            'status' => 0,
+            'subscription_key' => $account['account_key'],
+            'customer_id' => $account['customer_id'],
+            'product_id' => $account['product_id'],
+            );
+
+        $status = db_insert( 'ocs_account')
+            ->fields( $fields)
+            ->execute();
+        dpm( $status, 'db_insert ocs_account result');
+
+        // insert record in ocs_counter_tbl
+        // set account_key as used
+        $result = _ocs_admin_account_key_save( $account['account_key'], array(
+                'sales_flag' => '1',
+            ));
+
+    } 
+    catch( Exception $e) {
+        $txn->rollback();
+
+        dpm( $e, 'DB transaction failed');
+        watchdog_exception( 'ocs_admin', $e);
+    }
+
+    db_set_active( 'default');
+}
+
+function _ocs_admin_account_key_save( $account_key, $fields)
+{
+    // update account key as used
+    $result = db_update( 'ocs_account_key')
+        ->fields( $fields)
+        ->condition( 'account_key', $account_key, '=')
+        ->execute();
+    dpm( $result, 'db_update ocs_account_key result');
+}
+
+/*
+    delete account
+*/
+function ocs_admin_account_delete( $account_key)
+{
+    db_set_active( 'ocsdb');
+
+    $txn = db_transaction();
+
+    try {
+        // delete ocs_account
+        $result = db_delete( 'ocs_account')
+            ->condition( 'account_key', $account_key, '=')
+            ->execute();
+        dpm( $result, 'ocs_account result');
+
+        $result = db_delete( 'ocs_subscription')
+            ->condition( 'subscription_key', $account_key, '=')
+            ->execute();
+        dpm( $result, 'ocs_subscription result');
+
+        // set account_key as unused
+        $result = _ocs_admin_account_key_save( $account_key, array(
+                'sales_flag' => '0',
+            ));
+
+    } 
+    catch( Exception $e) {
+        $txn->rollback();
+
+        watchdog_exception( 'ocs_admin', $e);
+    }
+
+    db_set_active( 'default');
+}
+
+
+/*
+    load customer info
+*/
+function ocs_admin_customer_load( $customer_id)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_customer', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'customer_id', $customer_id, '=')
+        ->execute() 
+        ->fetchAssoc();
+//    dpm( $result, 'fetched customer');
+
+    db_set_active('default');
+
+    return $result;
+}
+
+/*
+    load account key info
+*/
+function ocs_admin_account_key_load( $account_key)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_account_key', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'account_key', $account_key, '=')
+        ->execute()
+        ->fetchAssoc();
+//    dpm( $result, 'fetched account key');
+
+    db_set_active('default');
+
+    return $result;
 }
 
 

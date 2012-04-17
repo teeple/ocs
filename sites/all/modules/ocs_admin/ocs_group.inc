@@ -252,6 +252,7 @@ function ocs_admin_build_tree( $nodes, $meta_field)
   $depthlist = array();
   foreach( $nodes as $node) {
       $path = _ocs_admin_build_path( $nodes, $node, $meta_field);
+
       $depth = count( $path);
       $depthlist[ $depth][] = array(
         'db' => $node,
@@ -811,6 +812,158 @@ function ocs_admin_member_delete_confirm_submit( $form, &$form_state)
     watchdog( 'ocs_admin', 'Deleted group member %key.', $t_args, WATCHDOG_NOTICE);
 
     $form_state['redirect'] = 'ocs_admin/group/'. $group['group_id'] . '/member';
+}
+
+
+
+/*
+    save OCS Customer Group
+*/
+function ocs_admin_group_save( $group)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'group_id' => isset($group['group_id']) ? $group['group_id'] : NULL,
+        'ancestor_group_id' => isset($group['ancestor_group_id']) ? $group['ancestor_group_id'] : 0,
+        'parent_group_id' => isset($group['parent_group_id']) ? $group['parent_group_id'] : 0,
+        'group_name' => isset($group['group_name']) ? $group['group_name'] : NULL,
+        'service_type' => isset($group['service_type']) ? $group['service_type'] : 0,
+        );
+    if ( isset( $group['master_number']))
+        $fields['master_number'] = $group['master_number'];
+
+    if ( isset( $group['group_id'])) {
+        $status = db_merge( 'ocs_group')
+            ->key( array( 'group_id' => $group['group_id']))
+            ->fields( $fields)
+            ->execute();
+        dpm( $status, 'db_merge result');
+    }
+    else {
+        // insert
+        $options = array('return' => Database::RETURN_INSERT_ID);
+        $last_insert_id = db_insert( 'ocs_group', $options)
+            ->fields( $fields)
+            ->execute();
+        dpm( $last_insert_id, 'db_insert result');
+
+        // update ancestor_group_id
+        if ( $fields['ancestor_group_id'] == 0 && $last_insert_id > 0) {
+            $result = db_update( 'ocs_group')
+                ->fields( array(
+                    'ancestor_group_id' => $last_insert_id
+                ))
+                ->condition( 'group_id', $last_insert_id, '=')
+                ->execute();
+            dpm( $result, 'db_update result');
+        }
+    }
+
+    db_set_active( 'default');
+}
+
+function ocs_admin_group_delete( $group)
+{
+    db_set_active( 'ocsdb');
+
+    // delete the group and all subgroups
+    $status = db_delete( 'ocs_group')
+        ->condition( 'ancestor_group_id', $group['group_id'])
+        ->execute();
+    dpm( $status, 'db_delete result');
+
+    db_set_active( 'default');
+}
+
+function ocs_admin_subgroup_delete( $group)
+{
+    db_set_active( 'ocsdb');
+
+    // delete
+    $status = db_delete( 'ocs_group')
+        ->condition( 'group_id', $group['group_id'])
+        ->execute();
+    dpm( $status, 'db_delete result');
+
+    // update
+    $status = db_update( 'ocs_group')
+        ->fields( array(
+            'parent_group_id' => $group['parent_group_id']
+            ))
+        ->condition( 'ancestor_group_id', $group['ancestor_group_id'], '=')
+        ->condition( 'parent_group_id', $group['group_id'], '=')
+        ->execute();
+    dpm( $status, 'db_update result');
+
+    db_set_active( 'default');
+}
+
+/*
+    save OCS group member 
+*/
+function ocs_admin_member_save( $member)
+{
+    db_set_active( 'ocsdb');
+
+    $fields = array( 
+        'group_id' => isset($member['group_id']) ? $member['group_id'] : 0,
+        'ancestor_group_id' => isset($member['ancestor_group_id']) ? $member['ancestor_group_id'] : 0,
+        'account_key' => isset($member['account_key']) ? $member['account_key'] : NULL,
+        'extension' => isset($member['extension']) ? $member['extension'] : '000',
+        'limitation' => isset($member['limitation']) ? $member['limitation'] : 0,
+//        'usage' => isset($member['usage']) ? $member['usage'] : 0,
+//        'next_reset_date' => isset($member['next_reset_date']) ? $member['next_reset_date'] : 0,
+        );
+
+     // insert
+     $status = db_merge( 'ocs_group_member')
+        ->key( array( 'account_key' => $member['account_key']))
+        ->fields( $fields)
+        ->execute();
+    dpm( $status, 'db_merge result');
+
+    db_set_active( 'default');
+}
+
+
+/*
+    load member info
+*/
+function ocs_admin_member_load( $account_key)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_group_member', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'account_key', $account_key, '=')
+        ->execute();
+
+    $member = $result->fetchAssoc();
+    dpm( $member, 'fetched group member');
+
+    db_set_active('default');
+
+    return $member;
+}
+
+
+/*
+    delete member info
+*/
+function ocs_admin_member_delete( $account_key)
+{
+   db_set_active('ocsdb');
+
+   $result = db_delete( 'ocs_group_member')
+        ->condition( 'account_key', $account_key, '=')
+        ->execute();
+
+    dpm( $result, 'db_delete group member');
+
+    db_set_active('default');
+
+    return $result;
 }
 
 
