@@ -1,5 +1,6 @@
 <?php
 
+
 /*
 ** add/edit card type information form
 */
@@ -82,19 +83,19 @@ function ocs_admin_card_form_validate( $form, &$form_state)
          form_set_error('active period', t('You have to enter numeric values the active period.'));
     }
 
-    if ( ! is_numeric( $cardtype['grace_peroid'])) {
+    if ( ! is_numeric( $cardtype['grace_period'])) {
          form_set_error('grace period', t('You have to enter numeric values the grace period.'));
     }
 }
 
 
-function ocs_admin_card_form_submin( $form, &$form_state )
+function ocs_admin_card_form_submit( $form, &$form_state )
 {
     $cardtype = $form_state['values'];
 
     if (ocs_admin_card_form_save($cardtype) != 0 ) {
 	    drupal_set_message( t('Your configuration has been saved.'));
-	    $form_state['redirect'] = '/cardtype/cardtype';
+	    $form_state['redirect'] = '/ocs_admin/cardtype';
     } else {
   
  	    $form['unit'] = array('#type' => 'textfield', '#value' => $cardtype['unit']);
@@ -102,7 +103,6 @@ function ocs_admin_card_form_submin( $form, &$form_state )
 	    $form['grace_period'] = array('#value' => $cardtype['grace_period']);
 	    $form['description'] = array('#value' => $cardtype['description']);
     }
-
 }
 
 /*
@@ -124,7 +124,7 @@ function ocs_admin_card_form_get_data( $cardtype )
     return $result;
 }
 
-function ocs_admin_product_card_add( $form, &$form_state, $type, $product_card)
+function ocs_admin_card_form_product_card_edit( $form, &$form_state, $type, $product_card)
 {    
 //    dpm($type, 'ocs_card_type');
 
@@ -167,4 +167,217 @@ function ocs_admin_product_card_add( $form, &$form_state, $type, $product_card)
     );
 
     return $form;
+}
+
+function ocs_admin_card_form_add_panel( $form, &$form_state, $arg=NULL)
+{
+    $from = array();
+    $form['product_card'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Connnect product and card type'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#prefix' => '<div id="ocs_admin_product_card_div">',
+        '#suffix' => '</div>'
+        );
+
+    $form['product_card']['card_type'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Card Type'),
+        '#default_value' => isset($arg['card_type']) ? $arg['card_type'] : NULL,
+        '#description' => t('<a href="#@link">Select a card type</a> to add assign',
+            array('@link' => 'Card Type')),
+        '#size' => '30',
+        );
+
+     $form['product_card']['description'] = array(
+        '#type' => 'item',
+        '#title' => t('Description : @description',
+            array('@description' => isset($arg['card_description']) ? $arg['card_description'] : '')),
+        );
+
+     $form['product_card']['product_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Product'),
+        '#default_value' => isset($arg['product_id']) ? $arg['product_id'] : NULL,
+        '#description' => t('<a href="#@link">Select a product</a> to add assign',
+            array('@link' => 'Product Name')),
+        '#size' => '30',
+        );
+
+     $form['product_card']['product_name'] = array(
+        '#type' => 'item',
+        '#title' => t('Product Name : @product_name',
+            array('@product_name' => isset($arg['product_name']) ? $arg['product_name'] : '')),
+        );
+
+     $form['product_card']['usable'] = array(
+        '#type' => 'select',
+        '#title' => t('Usable'),
+        '#options' => array(
+            0 => t('Unusable'),
+            1 => t('Usable'),
+            ),
+        '#default_value' => isset($arg['usable']) ? $arg['usable'] : '1',
+        '#description' => t('Set this to <em>Usable</em> if you would like this category to be selected by default.'),
+        );
+
+    $form['actions'] = array('#type' => 'actions');
+ 
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+    
+    $form['actions']['Cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+
+    return $form;
+}
+
+function ocs_admin_card_form_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
+{
+    // dpm($impl, 'ocs_admin_card_form_add_page');
+    if ($arg) {
+        $_SESSION['product_card'] = array_merge( $_SESSION['product_card'], $arg);
+    }
+    else if (!isset($_SESSION['product_card'])) {
+        $_SESSION['product_card'] = array();
+    }
+    
+    $form = drupal_get_form('ocs_admin_card_form_add'.$impl, $_SESSION['product_card']);
+    $output = '<div id="ocs_admin_card_form_add_div">'. drupal_render($form) . '</div>';
+
+    return $output;
+}
+
+function  ocs_admin_card_form_select_row($args)
+{
+    ctools_include('ajax'); 
+    $link = ctools_ajax_text_button(t('select'), current_path()."/nojs/".$args, t('select'));
+    return $link;
+}
+
+function ocs_cardtype_select($impl, $js=NULL, $type='card', $id=NULL, $name=NULL)
+{
+    dsm('ocs_cardtype_select');
+    $arg = array(
+        $type . '_type' => $id,
+        $type . '_description' => $name,
+        );
+    
+    $output = ocs_admin_card_form_add_page($impl, $arg);
+    
+    if ($js) {
+        ctools_include('ajax');
+        $commands = array();
+        $commands[] = ajax_command_replace('#ocs_admin_card_form_add_div', $output);
+        print ajax_render($commands);
+        exit;
+    }
+    else {
+        return $output;
+    }
+}
+
+function ocs_product_select($impl, $js=NULL, $type='product', $id=NULL, $name=NULL)
+{
+    dsm('ocs_product_select');
+    $arg = array(
+        $type . '_id' => $id,
+        $type . '_name' => $name,
+        );
+    
+    $output = ocs_admin_card_form_add_page($impl, $arg);
+
+    if ($js) {
+        ctools_include('ajax');
+        $commands = array();
+        $commands[] = ajax_command_replace('#ocs_admin_card_form_add_div', $output);
+        print ajax_render($commands);
+        exit;
+    }
+    else {
+        return $output;
+    }
+}
+
+function ocs_productcard_select($impl, $js=NULL, $type='productcard', $id=NULL, $name=NULL)
+{
+    dsm('ocs_product_select');
+    $arg = array(
+        $type . '_id' => $id,
+        $type . '_name' => $name,
+        );
+    dpm($arg, 'arg');
+    $output = ocs_admin_card_form_add_page($impl, $arg);
+
+    if ($js) {
+        ctools_include('ajax');
+        $commands = array();
+        $commands[] = ajax_command_replace('#ocs_admin_card_form_add_div', $output);
+        print ajax_render($commands);
+        exit;
+    }
+    else {
+        return $output;
+    }
+}
+
+function ocs_admin_card_form_add_panel_submit($form, &$form_state)
+{
+    if ($form_state['values']['op'] == 'Save') {
+        $form_state['redirect'] = 'ocs_admin/product/card';
+        if (ocs_admin_product_cardtype_save ($form_state['values'])) {
+            drupal_set_message('Connected product and cardtype');    
+        }
+    } else if ($form_state['values']['op'] == 'Cancel') {
+        $_SESSION['product_card'] = array();
+    }
+}
+
+function ocs_admin_product_cardtype_save($cardtype)
+{
+    if ( ! isset($cardtype['card_type']) || ! isset($cardtype['product_id'])) {
+        drupal_set_message( 'Insufficient parameters to connect product and cardtype', 'warning');
+        return FALSE;
+    }
+
+    db_set_active('ocsdb');
+
+    $txn = db_transaction();
+
+    try {
+        $default_value = array (
+            'card_type' => $cardtype['card_type'],
+            'product_id' => $cardtype['product_id'],
+            'usable' => $cardtype['usable'],
+            );
+
+        $result = db_insert('ocs_product_card')
+            ->fields($default_value)
+            ->execute();
+    }
+    catch(Exception $e){
+        try {
+            $default_value = array();
+            $default_value = array(
+                'usable' => $cardtype['usable']
+                );
+            $result = db_update('ocs_product_card')
+                ->fields($default_value)
+                ->condition('card_type', $cardtype['card_type'], '=')
+                ->condition('product_id', $cardtype['product_id'], '=')
+                ->execute();
+            }
+            catch(exception $e){
+                $txn->rollback();
+                dpm($e, 'db transaction failed');
+                watchdog_exception('ocs_admin', $e);
+            }
+    }
+    db_set_active('default');
 }

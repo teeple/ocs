@@ -2,9 +2,52 @@ SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL';
 
-CREATE SCHEMA IF NOT EXISTS `ocsdata` DEFAULT CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
-CREATE SCHEMA IF NOT EXISTS `ocsdata` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `ocsdata` DEFAULT CHARACTER SET latin1 COLLATE latin1_general_ci ;
 USE `ocsdata` ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ACCOUNT_TBL`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ACCOUNT_TBL` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ACCOUNT_TBL` (
+  `SUBS_ID` VARCHAR(20) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NOT NULL ,
+  `BALANCE` INTEGER NULL DEFAULT NULL ,
+  `BALANCE2` INTEGER NULL DEFAULT NULL ,
+  `TIME_STAMP` BIGINT(20) NULL DEFAULT NULL ,
+  `ACCOUNT_DEPOSIT` INTEGER NULL DEFAULT NULL ,
+  `DEPOSIT_TIME` BIGINT(20) NULL DEFAULT NULL ,
+  `DEPOSIT_COUNT` INTEGER NULL DEFAULT NULL ,
+  `RESERVED0` VARCHAR(8) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NULL DEFAULT NULL ,
+  PRIMARY KEY (`SUBS_ID`) )
+ENGINE = MyISAM
+DEFAULT CHARACTER SET = latin1
+COLLATE = latin1_general_ci;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`COUNTER_TBL`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`COUNTER_TBL` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`COUNTER_TBL` (
+  `SUBS_ID` VARCHAR(20) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NOT NULL DEFAULT '' ,
+  `COUNTER_ID` INTEGER NOT NULL DEFAULT '0' ,
+  `COUNTER_VALUE` INTEGER NULL DEFAULT NULL ,
+  `COUNTER_VALUE2` INTEGER NULL DEFAULT NULL ,
+  `COUNTER_MAX_VALUE` INTEGER NULL DEFAULT NULL ,
+  `COUNTER_EXPIRE` BIGINT(20) NULL DEFAULT NULL ,
+  `COUNTER_DEPOSIT` INTEGER NULL DEFAULT NULL ,
+  `RESERVED0` VARCHAR(8) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NULL DEFAULT NULL ,
+  PRIMARY KEY (`SUBS_ID`, `COUNTER_ID`) )
+ENGINE = MyISAM
+DEFAULT CHARACTER SET = latin1
+COLLATE = latin1_general_ci;
+
+CREATE UNIQUE INDEX `IDX_COUNTER_TBL_02` ON `ocsdata`.`COUNTER_TBL` (`SUBS_ID` ASC, `COUNTER_ID` ASC) ;
+
+CREATE INDEX `IDX_COUNTER_TBL_01` ON `ocsdata`.`COUNTER_TBL` (`SUBS_ID` ASC) ;
+
 
 -- -----------------------------------------------------
 -- Table `ocsdata`.`ocs_customer`
@@ -13,32 +56,12 @@ DROP TABLE IF EXISTS `ocsdata`.`ocs_customer` ;
 
 CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_customer` (
   `customer_id` VARCHAR(11) NOT NULL ,
-  `customer_name` VARCHAR(24) NOT NULL ,
+  `customer_name` VARCHAR(128) NOT NULL ,
   `customer_type` VARCHAR(3) NOT NULL ,
   `date_register` DATETIME NOT NULL ,
   PRIMARY KEY (`customer_id`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_subscription`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_subscription` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_subscription` (
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `subscription_type` INT(11) NOT NULL COMMENT 'mobile_prepaid\nmobile_postpaid\nmobile_hybrid\niptv_postpaid\nvoip_prepaid' ,
-  `charging_type` INT(11) NOT NULL COMMENT 'hybrid인 경우에 prepaid 또는 postpaid 중 하나를 사용자가 선택할 수 있다.\n그외의 경우는 사용하지 않는다.' ,
-  `status` INT(11) NOT NULL COMMENT 'normal, suspend, initial, terminate, ...' ,
-  `active_expire_date` DATETIME NOT NULL ,
-  `grace_expire_date` DATETIME NOT NULL ,
-  `home_info` VARCHAR(32) NOT NULL ,
-  `preferred_language` INT(11) NOT NULL ,
-  `notification_flag_set` INT(11) NOT NULL, 
-  PRIMARY KEY (`subscription_key`) )
-ENGINE = InnoDB;
-
-CREATE UNIQUE INDEX `subscription_key_UNIQUE` ON `ocsdata`.`ocs_subscription` (`subscription_key` ASC) ;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
 
 -- -----------------------------------------------------
@@ -47,177 +70,35 @@ CREATE UNIQUE INDEX `subscription_key_UNIQUE` ON `ocsdata`.`ocs_subscription` (`
 DROP TABLE IF EXISTS `ocsdata`.`ocs_product` ;
 
 CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_product` (
-  `product_name` VARCHAR(20) NOT NULL ,
-  `product_desc` VARCHAR(100) NULL,
-  `product_serial_no` VARCHAR(10) NULL,
-  `product_status` VARCHAR(2) NULL COMMENT 'planned, designed, activated, disconnected' ,
-  `product_period` DATETIME NULL ,
-  `product_tid`	INT(11) NULL,
+  `product_name` VARCHAR(20) NOT NULL COMMENT '상품명' ,
+  `product_desc` VARCHAR(100) NULL DEFAULT NULL COMMENT '상품설명' ,
+  `product_serial_no` VARCHAR(10) NULL DEFAULT NULL COMMENT '상품 고유 번호' ,
+  `product_status` VARCHAR(2) NULL DEFAULT NULL COMMENT 'planned, designed, activated, disconnected' ,
+  `product_period` DATETIME NULL DEFAULT NULL ,
+  `product_tid` INTEGER NULL DEFAULT NULL ,
   PRIMARY KEY (`product_name`) )
 ENGINE = InnoDB
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_account`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_account` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_account` (
-  `account_key` VARCHAR(24) NOT NULL ,
-  `status` INT NOT NULL COMMENT 'active or deactive\nUnitel의 경우 2개 번호를 받고 그 중 하나를 예비로 두었다가 필요한 경우 사용할 수 있음\nCS나 USSD, Feature Code로 변경할 수 있음' ,
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `customer_id` VARCHAR(11) NOT NULL ,
-  `product_id` INT(11) NOT NULL ,
-  `product_name`    VARCHAR(20) NOT NULL,
-  `card_no` VARCHAR(32) NOT NULL,
-  `card_type`   VARCHAR(4)  NOT NULL,
-  PRIMARY KEY (`account_key`, `subscription_key`, `customer_id`, `product_id`) )
-ENGINE = InnoDB;
-
-CREATE INDEX `fk_OCS_account_OCS_subscription1` ON `ocsdata`.`ocs_account` (`subscription_key` ASC) ;
-
-CREATE INDEX `fk_OCS_account_OCS_customer1` ON `ocsdata`.`ocs_account` (`customer_id` ASC) ;
-
-CREATE INDEX `fk_OCS_account_OCS_Product1` ON `ocsdata`.`ocs_account` (`product_id` ASC) ;
+DEFAULT CHARACTER SET = utf8;
 
 
 -- -----------------------------------------------------
--- Table `ocsdata`.`ocs_recharge_info`
+-- Table `ocsdata`.`ocs_subscription`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_recharge_info` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_subscription` ;
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_recharge_info` (
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `last_recharge_type` INT(11) NOT NULL ,
-  `last_recharge_money` INT(11) NOT NULL ,
-  `last_recharge_time` DATETIME NOT NULL ,
-  `voucher_number` VARCHAR(32) NOT NULL ,
-  `error_count` INT(11) NOT NULL ,
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_subscription` (
+  `subscription_type` INTEGER NULL DEFAULT NULL COMMENT '- 0:postpaid, 1:prepaid, 2:hybrid' ,
+  `charging_type` INTEGER NULL DEFAULT NULL COMMENT '- 0:deduction,1:accumulation' ,
+  `status` INTEGER NULL DEFAULT NULL COMMENT 'normal, suspend, initial, terminate, ...' ,
+  `active_expire_date` DATETIME NULL DEFAULT NULL ,
+  `grace_expire_date` DATETIME NULL DEFAULT NULL ,
+  `home_info` VARCHAR(32) NULL DEFAULT NULL ,
+  `preferred_language` INTEGER NULL DEFAULT NULL COMMENT '- 0:Mongolia, 1:English' ,
+  `notification_flag_set` INTEGER NULL DEFAULT NULL COMMENT '- 0:NONE, 1:SMS_NOTI, 2:IVR_NOTI 3:USSD_NOTI' ,
   PRIMARY KEY (`subscription_key`) )
-ENGINE = InnoDB;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
-CREATE UNIQUE INDEX `OCS_subscription_subscription_key_UNIQUE` ON `ocsdata`.`ocs_recharge_info` (`subscription_key` ASC) ;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_call_history`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_call_history` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_call_history` (
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `calling` VARCHAR(24) NOT NULL ,
-  `call_type` INT(11) NOT NULL ,
-  `destination` VARCHAR(32) NOT NULL ,
-  `start_time` DATETIME NOT NULL ,
-  `end_time` DATETIME NOT NULL ,
-  `usage` INT(11) NOT NULL default 0,
-  `charging_type` INT(11) NOT NULL ,
-  `deducted_unit` INT(11) NOT NULL default 0,
-  PRIMARY KEY (`subscription_key`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_vas`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_vas` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_vas` (
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `vas_id` VARCHAR(45) NOT NULL ,
-  `registred_date` DATETIME NOT NULL ,
-  `status` INT(11) NOT NULL ,
-  PRIMARY KEY (`subscription_key`) )
-ENGINE = InnoDB;
-
-CREATE UNIQUE INDEX `vas_id_UNIQUE` ON `ocsdata`.`ocs_vas` (`vas_id` ASC) ;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_group_service`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_group_service` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group_service` (
-  `group_id` INT(11) NOT NULL ,
-  `parent_group_id` INT(11) NOT NULL ,
-  `service_type` INT(11) NOT NULL ,
-  `master_number` VARCHAR(24) NOT NULL ,
-  PRIMARY KEY (`group_id`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_group_member`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_group_member` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group_member` (
-  `group_id` INT(11) NOT NULL ,
-  `ancestor_group_id` INT(11) NOT NULL ,
-  `extension` VARCHAR(16) NOT NULL ,
-  `limitation` INT(11) NOT NULL ,
-  `usage` INT(11) NOT NULL ,
-  `next_reset_date` DATE NOT NULL ,
-  `account_key` VARCHAR(24) NOT NULL ,
-  PRIMARY KEY (`group_id`, `extension`, `account_key`) )
-ENGINE = InnoDB;
-
-CREATE INDEX `fk_OCS_group_member_OCS_group_service1` ON `ocsdata`.`ocs_group_member` (`group_id` ASC) ;
-
-CREATE INDEX `fk_OCS_group_member_OCS_account1` ON `ocsdata`.`ocs_group_member` (`account_key` ASC) ;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_customer_info`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_customer_info` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_customer_info` (
-  `customer_id` VARCHAR(11) NOT NULL ,
-  `additional_info` VARCHAR(45) NULL ,
-  PRIMARY KEY (`customer_id`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_counter_name`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_counter_name` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_counter_name` (
-  `counter_id` INT(11) NOT NULL ,
-  `counter_name` VARCHAR(40) NOT NULL ,
-  `counter_desc` VARCHAR(128) NOT NULL ,
-  `counter_type` INT(11) NOT NULL COMMENT 'COUNTER 동작 (bit가 아닌 int로 표시함)\n- XXXXXX01 : 매월 reset 필요\n- XXXXXX10 : expire 봐야 하는 counter단위.\n- XXXX00XXXX : WON\n- XXXX01XXXX : DOSU\n- XXXX02XXXX : 건수\n- XXXX03XXXX : sec\n- XXXX04XXXX : byte\n- XXXX05XXXX : packet' ,
-  `counter_scale` INT(11) NOT NULL ,
-  PRIMARY KEY (`counter_id`) )
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_counter`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_counter` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_counter` (
-  `subscription_key` VARCHAR(24) NOT NULL ,
-  `counter_id` INT(11) NOT NULL ,
-  `counter_value` BIGINT NOT NULL ,
-  `counter_time_stamp` BIGINT NOT NULL ,
-  `counter_expire` BIGINT NOT NULL ,
-  `counter_deposit` BIGINT NOT NULL ,
-  `deposit_time` BIGINT NOT NULL ,
-  `deposit_count` INT(11) NOT NULL ,
-  `counter_state` INT(11) NOT NULL ,
-  `counter_max_value` INT(11) NULL ,
-  `counter_value2` BIGINT NULL ,
-  PRIMARY KEY (`subscription_key`, `counter_id`) )
-ENGINE = InnoDB;
-
-CREATE INDEX `fk_OCS_counter_OCS_counter_name1` ON `ocsdata`.`ocs_counter` (`counter_id` ASC) ;
-
-USE `ocsdata` ;
 
 -- -----------------------------------------------------
 -- Table `ocsdata`.`ocs_account_key_type`
@@ -241,27 +122,93 @@ CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_account_key` (
   `account_key` VARCHAR(30) NOT NULL ,
   `account_key_type` VARCHAR(10) NOT NULL ,
   `status` VARCHAR(10) NOT NULL ,
-  `sales_flag` VARCHAR(1) NULL DEFAULT '0' NULL ,
+  `sales_flag` VARCHAR(1) NULL DEFAULT '0' ,
   PRIMARY KEY (`account_key`) )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
-
 -- -----------------------------------------------------
--- Table `ocsdata`.`ocs_group`
+-- Table `ocsdata`.`ocs_account`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_group` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_account` ;
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group` (
-  `group_id` INT(11) NOT NULL ,
-  `parent_group_id`  INT(11) not NULL,
-  `service_type` INT(11) not null,
-  `master_number`   varchar(24) not null,   
-  `group_name` VARCHAR(64) not null ,
-  `ancestor_group_id` INT(11) NOT NULL ,
-  PRIMARY KEY (`group_id`) )
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_account` (
+  `account_key` VARCHAR(24) NOT NULL ,
+  `customer_id` VARCHAR(11) NOT NULL ,
+  `subscription_key` VARCHAR(24) NOT NULL ,
+  `status` INTEGER NOT NULL COMMENT 'active or deactive\nUnitel?? ??? 2?? ????? ??? ?? ?? ????? ????? ?ξ???? ????? ??? ????? ?? ????\nCS?? USSD, Feature Code?? ?????? ?? ????' ,
+  `product_id` INTEGER NOT NULL ,
+  PRIMARY KEY (`account_key`) )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_call_history`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_call_history` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_call_history` (
+  `subscription_key` VARCHAR(24) NOT NULL ,
+  `calling` VARCHAR(24) NOT NULL ,
+  `call_type` INTEGER NOT NULL ,
+  `destination` VARCHAR(32) NOT NULL ,
+  `start_time` DATETIME NOT NULL ,
+  `end_time` DATETIME NOT NULL ,
+  `account_usage` INTEGER NOT NULL ,
+  `charging_type` INTEGER NOT NULL ,
+  `deducted_unit` INTEGER NOT NULL ,
+  PRIMARY KEY (`subscription_key`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card_type`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_type` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_type` (
+  `card_type` VARCHAR(4) CHARACTER SET 'utf8' NOT NULL COMMENT '카드 유형' ,
+  `unit` DECIMAL(10,0) NULL DEFAULT '0' COMMENT '충전금액' ,
+  `active_period` INTEGER NULL DEFAULT '0' COMMENT 'Active 기간' ,
+  `grace_period` INTEGER NULL DEFAULT '0' COMMENT 'Grace 기간' ,
+  `description` VARCHAR(128) CHARACTER SET 'utf8' NULL DEFAULT NULL ,
+  PRIMARY KEY (`card_type`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = latin1;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card` (
+  `card_no` VARCHAR(32) CHARACTER SET 'utf8' NOT NULL COMMENT '카드번호' ,
+  `card_type` VARCHAR(4) CHARACTER SET 'utf8' NOT NULL ,
+  `pin_no` VARCHAR(32) CHARACTER SET 'utf8' NULL DEFAULT NULL COMMENT 'PIN 번호' ,
+  `recharge_datetime` DATETIME NULL DEFAULT NULL COMMENT '충전일시' ,
+  `account_key` VARCHAR(24) CHARACTER SET 'utf8' NULL DEFAULT NULL COMMENT 'Account Key' ,
+  `status` VARCHAR(2) CHARACTER SET 'utf8' NULL DEFAULT '0' COMMENT '카드상태(IDLE, NOT USED, USED, ...)' ,
+  PRIMARY KEY (`card_no`, `card_type`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = latin1;
+
+CREATE UNIQUE INDEX `IDX_OCS_CARD_01` ON `ocsdata`.`ocs_card` (`pin_no` ASC) ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_card_added_service`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_card_added_service` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_added_service` (
+  `card_type` VARCHAR(4) NOT NULL COMMENT '카드유형' ,
+  `start_date` DATE NOT NULL COMMENT '적용일시' ,
+  `end_date` DATE NULL DEFAULT NULL COMMENT '종료일시' ,
+  `promotion_no` VARCHAR(16) NULL DEFAULT NULL COMMENT 'pc에서 정의한 promotion 호출' ,
+  PRIMARY KEY (`card_type`, `start_date`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
 
 -- -----------------------------------------------------
 -- Table `ocsdata`.`ocs_code_master`
@@ -290,92 +237,219 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 -- -----------------------------------------------------
--- Table `ocsdata`.`ocs_card_type`
+-- Table `ocsdata`.`ocs_counter_name`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card_type` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_counter_name` ;
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_type` (
-  `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
-  `unit` DECIMAL(8) NULL DEFAULT 0 COMMENT '충전금액' ,
-  `active_period` INT NULL DEFAULT 0 COMMENT 'Active 기간' ,
-  `grace_period` INT NULL DEFAULT 0 COMMENT 'Grace 기간' ,
-  PRIMARY KEY (`card_type`) )
-ENGINE = InnoDB;
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_counter_name` (
+  `counter_id` INTEGER NOT NULL ,
+  `counter_name` VARCHAR(40) NOT NULL ,
+  `counter_desc` VARCHAR(128) NOT NULL ,
+  `counter_type` INTEGER NOT NULL COMMENT 'COUNTER ???? (bit?? ??? int?? ?????)\n- XXXXXX01 : ??? reset ???\n- XXXXXX10 : expire ???? ??? counter????.\n- XXXX00XXXX : WON\n- XXXX01XXXX : DOSU\n- XXXX02XXXX : ???\n- XXXX03XXXX : sec\n- XXXX04XXXX : byte\n- XXXX05XXXX : packet' ,
+  `counter_scale` INTEGER NOT NULL ,
+  PRIMARY KEY (`counter_id`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
-
--- -----------------------------------------------------
--- Table `ocsdata`.`ocs_card`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card` ;
-
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card` (
-  `card_no` VARCHAR(32) NOT NULL COMMENT '카드번호' ,
-  `card_type` VARCHAR(4) NOT NULL ,
-  `pin_no` VARCHAR(32) NULL COMMENT 'PIN 번호' ,
-  `recharge_datetime` DATETIME NULL COMMENT '충전일시' ,
-  `account_key` VARCHAR(24) NULL COMMENT 'Account Key' ,
-  `status` VARCHAR(2) NULL DEFAULT 0 COMMENT '카드상태(IDLE, NOT USED, USED, ...)' ,
-  PRIMARY KEY (`card_no`) )
-ENGINE = InnoDB;
-
-CREATE UNIQUE INDEX `IDX_PIN_NO` ON `ocsdata`.`ocs_card` (`pin_no` ASC) ;
-
-CREATE INDEX `fk_ocs_recharge_ocs_card_type1` ON `ocsdata`.`ocs_card` (`card_type` ASC) ;
-
-USE `ocsdata` ;
 
 -- -----------------------------------------------------
--- Table `ocsdata`.`ocs_card_added_service`
+-- Table `ocsdata`.`ocs_counter`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card_added_service` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_counter` ;
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_added_service` (
-  `card_type` VARCHAR(4) NOT NULL COMMENT '카드유형' ,
-  `start_date` DATE NOT NULL COMMENT '적용일시' ,
-  `end_date` DATE NULL COMMENT '종료일시' ,
-  `promotion_no` VARCHAR(16) NULL COMMENT 'pc에서 정의한 promotion 호출' ,
-  PRIMARY KEY (`card_type`, `start_date`) )
-ENGINE = InnoDB;
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_counter` (
+  `counter_id` INTEGER NOT NULL COMMENT 'COUNTER ID (ex:freeDosu,freeVodPacket)' ,
+  `subscription_key` VARCHAR(24) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NOT NULL COMMENT '... ID (MDN, MSISDN)  ' ,
+  `counter_value` INTEGER NOT NULL DEFAULT '0' COMMENT 'COUNTER .' ,
+  `counter_value2` INTEGER NOT NULL DEFAULT '0' COMMENT '... COUNTER .' ,
+  `counter_max_value` INTEGER NOT NULL DEFAULT '0' COMMENT 'COUNTER .. .' ,
+  `counter_expire` BIGINT(20) NOT NULL DEFAULT '0' COMMENT 'COUNTER .....' ,
+  `counter_deposit` INTEGER NOT NULL DEFAULT '0' COMMENT '... COUNTER VALUE' ,
+  `RESERVED0` VARCHAR(8) CHARACTER SET 'latin1' COLLATE 'latin1_general_ci' NULL DEFAULT NULL )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = latin1
+COLLATE = latin1_general_ci;
 
+CREATE UNIQUE INDEX `IDX_OCS_COUNTER_01` ON `ocsdata`.`ocs_counter` (`subscription_key` ASC, `counter_id` ASC) ;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_customer_info`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_customer_info` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_customer_info` (
+  `customer_id` VARCHAR(11) NOT NULL ,
+  `additional_info` VARCHAR(45) NULL DEFAULT NULL ,
+  PRIMARY KEY (`customer_id`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_group`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_group` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group` (
+  `group_id` INTEGER NOT NULL AUTO_INCREMENT ,
+  `parent_group_id` INTEGER NOT NULL ,
+  `service_type` INTEGER NOT NULL ,
+  `master_number` VARCHAR(24) NOT NULL ,
+  `group_name` VARCHAR(64) NOT NULL ,
+  `ancestor_group_id` INTEGER NOT NULL ,
+  PRIMARY KEY (`group_id`) )
+ENGINE = InnoDB
+AUTO_INCREMENT = 1000
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_group_member`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_group_member` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group_member` (
+  `group_id` INTEGER NOT NULL ,
+  `account_key` VARCHAR(24) NOT NULL ,
+  `ancestor_group_id` INTEGER NOT NULL ,
+  `extension` VARCHAR(16) NULL DEFAULT NULL ,
+  `limitation` INTEGER NULL DEFAULT '0' ,
+  `account_usage` INTEGER NULL DEFAULT '0' ,
+  `next_reset_date` DATE NULL DEFAULT NULL ,
+  PRIMARY KEY (`account_key`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
 -- -----------------------------------------------------
 -- Table `ocsdata`.`ocs_product_card`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `ocsdata`.`ocs_card_product` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_product_card` ;
 
-CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_card_product` (
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_product_card` (
   `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
   `product_id` VARCHAR(45) NOT NULL COMMENT '상품 코드' ,
-  `usable` TINYINT(1) NULL DEFAULT 0 COMMENT '사용가능 여부(0:not usd, 1:use)' ,
+  `usable` TINYINT(1) NULL DEFAULT '0' COMMENT '사용가능 여부(0:not usd, 1:use)' ,
   PRIMARY KEY (`card_type`, `product_id`) )
-ENGINE = InnoDB;
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
 
-/*******************************************************************************
+
 -- -----------------------------------------------------
--- Placeholder table for view `ocsdata`.`account_key_view`
+-- Table `ocsdata`.`ocs_recharge_info`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ocsdata`.`account_key_view` (`account_key` INT, `account_key_type` INT, `account_key_name` INT, `sales_flag` INT);
+DROP TABLE IF EXISTS `ocsdata`.`ocs_recharge_info` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_recharge_info` (
+  `subscription_key` VARCHAR(24) NOT NULL ,
+  `last_recharge_type` INTEGER NOT NULL ,
+  `last_recharge_money` INTEGER NOT NULL ,
+  `last_recharge_time` DATETIME NOT NULL ,
+  `voucher_number` VARCHAR(32) NOT NULL ,
+  `error_count` INTEGER NOT NULL ,
+  PRIMARY KEY (`subscription_key`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+CREATE INDEX `IDX_OCS_RECHARGE_INFO_01` ON `ocsdata`.`ocs_recharge_info` (`subscription_key` ASC) ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_vas`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_vas` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_vas` (
+  `subscription_key` VARCHAR(24) NOT NULL ,
+  `vas_id` VARCHAR(45) NOT NULL ,
+  `registred_date` DATETIME NOT NULL ,
+  `status` INTEGER NOT NULL ,
+  PRIMARY KEY (`subscription_key`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+CREATE UNIQUE INDEX `IDX_OCS_VAS_01` ON `ocsdata`.`ocs_vas` (`vas_id` ASC) ;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`rating_factors`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`rating_factors` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`rating_factors` (
+  `id` INTEGER NOT NULL AUTO_INCREMENT ,
+  `product_code` VARCHAR(32) NOT NULL ,
+  `product_name` VARCHAR(32) NOT NULL ,
+  `packaged_code` VARCHAR(32) NOT NULL ,
+  `packaged_name` VARCHAR(32) NULL DEFAULT NULL ,
+  `factor` VARCHAR(32) NOT NULL ,
+  `function` VARCHAR(32) NOT NULL ,
+  PRIMARY KEY (`id`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = latin1;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_campaign`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_campaign` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_campaign` (
+  `campaign_id` INTEGER NOT NULL ,
+  `campaign_name` VARCHAR(64) NULL DEFAULT 'Campaign' ,
+  PRIMARY KEY (`campaign_id`) )
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_campaign_events`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_campaign_events` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_campaign_events` (
+  `campaign_id` INTEGER NOT NULL ,
+  `event_id` INTEGER NOT NULL AUTO_INCREMENT ,
+  PRIMARY KEY (`event_id`) )
+ENGINE = InnoDB
+AUTO_INCREMENT = 772
+DEFAULT CHARACTER SET = utf8;
+
+-- -----------------------------------------------------
+-- Table `ocsdata`.`ocs_campaign_conditions`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `ocsdata`.`ocs_campaign_conditions` ;
+
+CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_campaign_conditions` (
+  `my_id` INTEGER NOT NULL AUTO_INCREMENT ,
+  `event_id` INTEGER NOT NULL ,
+  `campaign_id` INTEGER NOT NULL ,
+  `parent_id` INTEGER NOT NULL ,
+  `cond_name` VARCHAR(32) NOT NULL ,
+  PRIMARY KEY (`my_id`, `event_id`) )
+ENGINE = InnoDB
+AUTO_INCREMENT = 4
+DEFAULT CHARACTER SET = utf8;
+
+-- -----------------------------------------------------
+-- Placeholder table for view `ocsdata`.`ocs_account_key_view`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `ocsdata`.`ocs_account_key_view` (`account_key` INT, `account_key_type` INT, `account_key_name` INT, `sales_flag` INT);
 
 -- -----------------------------------------------------
 -- Placeholder table for view `ocsdata`.`ocs_customer_view`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `ocsdata`.`ocs_customer_view` (`customer_id` INT, `customer_name` INT, `code_name` INT, `date_register` INT);
+CREATE TABLE IF NOT EXISTS `ocsdata`.`ocs_customer_view` (`customer_id` INT, `customer_name` INT, `code_name` INT, `sub_code` INT, `date_register` INT);
 
 -- -----------------------------------------------------
--- View `ocsdata`.`account_key_view`
+-- Placeholder table for view `ocsdata`.`ocs_product_view`
 -- -----------------------------------------------------
-DROP VIEW IF EXISTS `ocsdata`.`account_key_view` ;
-DROP TABLE IF EXISTS `ocsdata`.`account_key_view`;
+CREATE TABLE IF NOT EXISTS `ocsdata`.`ocs_product_view` (`product_serial_no` INT, `product_desc` INT, `product_name` INT, `product_status` INT, `product_period` INT, `product_tid` INT, `code_name` INT);
+
+-- -----------------------------------------------------
+-- View `ocsdata`.`ocs_account_key_view`
+-- -----------------------------------------------------
+DROP VIEW IF EXISTS `ocsdata`.`ocs_account_key_view` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_account_key_view`;
 USE `ocsdata`;
-CREATE  OR REPLACE view account_key_view as
- select a.account_key, 
-        a.account_key_type,
-        b.account_key_name,
-        case a.sales_flag when '0' then 'Not Use'
-                          when '1' then 'Used' 
-        end as sales_flag
-   from ocs_account_key a inner join ocs_account_key_type b
-  where a.account_key_type = b.account_key_type;
+CREATE  OR REPLACE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ocsdata`.`ocs_account_key_view` AS select `a`.`account_key` AS `account_key`,`a`.`account_key_type` AS `account_key_type`,`b`.`account_key_name` AS `account_key_name`,(case `a`.`sales_flag` when '0' then 'Not Use' when '1' then 'Used' end) AS `sales_flag` from (`ocsdata`.`ocs_account_key` `a` join `ocsdata`.`ocs_account_key_type` `b`) where (`a`.`account_key_type` = `b`.`account_key_type`);
 
 -- -----------------------------------------------------
 -- View `ocsdata`.`ocs_customer_view`
@@ -383,24 +457,16 @@ CREATE  OR REPLACE view account_key_view as
 DROP VIEW IF EXISTS `ocsdata`.`ocs_customer_view` ;
 DROP TABLE IF EXISTS `ocsdata`.`ocs_customer_view`;
 USE `ocsdata`;
-CREATE  OR REPLACE view ocs_customer_view as 
-select a.customer_id, a.customer_name, b.code_name, b.sub_code, a.date_register
-  from ocs_customer a inner join ocs_code_sub b 
- where a.customer_type = b.sub_code;
-
+CREATE  OR REPLACE ALGORITHM=UNDEFINED DEFINER=`root`@`192.168.5.1` SQL SECURITY DEFINER VIEW `ocsdata`.`ocs_customer_view` AS select `a`.`customer_id` AS `customer_id`,`a`.`customer_name` AS `customer_name`,`b`.`code_name` AS `code_name`,`b`.`sub_code` AS `sub_code`,`a`.`date_register` AS `date_register` from (`ocsdata`.`ocs_customer` `a` join `ocsdata`.`ocs_code_sub` `b`) where (`a`.`customer_type` = `b`.`sub_code`);
 
 -- -----------------------------------------------------
 -- View `ocsdata`.`ocs_product_view`
 -- -----------------------------------------------------
-create view ocs_product_view as
-select a.product_serial_no, a.product_desc,   a.product_name, 
-       a.product_status,    a.product_period, a.product_tid, b.code_name
-  from ocs_product a inner join ocs_code_sub b
- where a.product_status = b.sub_code
-   and b.master_code = 'P100';
+DROP VIEW IF EXISTS `ocsdata`.`ocs_product_view` ;
+DROP TABLE IF EXISTS `ocsdata`.`ocs_product_view`;
+USE `ocsdata`;
+CREATE  OR REPLACE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ocsdata`.`ocs_product_view` AS select `a`.`product_serial_no` AS `product_serial_no`,`a`.`product_desc` AS `product_desc`,`a`.`product_name` AS `product_name`,`a`.`product_status` AS `product_status`,`a`.`product_period` AS `product_period`,`a`.`product_tid` AS `product_tid`,`b`.`code_name` AS `code_name` from (`ocsdata`.`ocs_product` `a` join `ocsdata`.`ocs_code_sub` `b`) where ((`a`.`product_status` = `b`.`sub_code`) and (`b`.`master_code` = 'P100'));
 
-
-********************************************************************************/
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
@@ -10524,22 +10590,22 @@ insert into ocs_account_key (`account_key`,`account_key_TYPE`,`status`) value ('
 insert into ocs_account_key (`account_key`,`account_key_TYPE`,`status`) value ('91109289','VTYPE_MOBI','01');
 
 -- Product Data
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('Cool', 'prepaid', '1', '3', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('D20', 'prepaid', '1', '1', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('SkyCall', 'prepaid', '1', '2', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('SMS Dealer', 'prepaid', '1', '0', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('Free VPN', 'prepaid', '1', '4', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('SkyPhone', 'prepaid', '1', '7', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('SKYTEL', 'postpaid', '1', '10', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('VIP1', 'postpaid', '1', '13', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('VIP2', 'postpaid', '1', '14', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('VIP3', 'postpaid', '1', '15', '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('VIP', 'postpaid', '1', '6',  '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('BC', 'postpaid', '1', '5',  '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('NICE', 'postpaid', '1', '8',  '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('VIP 1000', 'postpaid', '1', '9',  '0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('SkyNet', 'prepaid', '1', '11','0'); 
-INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_serial_no, product_status, product_period) VALUES ('HYBRID', 'postpaid', '1', '12', '1'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('Cool', 'prepaid', '1', '3', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('D20', 'prepaid', '1', '1', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('SkyCall', 'prepaid', '1', '2', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('SMS Dealer', 'prepaid', '1', '0', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('Free VPN', 'prepaid', '1', '4', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('SkyPhone', 'prepaid', '1', '7', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('SKYTEL', 'postpaid', '1', '10', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('VIP1', 'postpaid', '1', '13', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('VIP2', 'postpaid', '1', '14', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('VIP3', 'postpaid', '1', '15', '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('VIP', 'postpaid', '1', '6',  '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('BC', 'postpaid', '1', '5',  '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('NICE', 'postpaid', '1', '8',  '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('VIP 1000', 'postpaid', '1', '9',  '0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('SkyNet', 'prepaid', '1', '11','0'); 
+INSERT INTO ocsdata.ocs_product (product_name, product_desc, product_status, product_serial_no, product_period) VALUES ('HYBRID', 'postpaid', '1', '12', '1'); 
 
 -- Product Data
 insert into ocsdata.ocs_code_master (master_code, code_name) values ('P100', 'Product Status');

@@ -1,13 +1,8 @@
 <?php
 
-define( 'OCS_DEFAULT_IP_ADDRESS', '0.0.0.0');
-define( 'OCS_DEFAULT_USER_ACCOUNT', 'ocs');
-define( 'OCS_DEFAULT_CONFIG_DIR', 'lua/script/uocs/ui');
-define( 'OCS_DEFAULT_EVENT_FILE_NAME', 'OcsOpenItem.json');
-
 module_load_include( 'inc', 'ocs_admin', 'ocs_account');
 module_load_include( 'inc', 'ocs_admin', 'ocs_group');
-//module_load_include( 'inc', 'ocs_admin', 'ocs_card');
+module_load_include( 'inc', 'ocs_admin', 'ocs_card');
 
 /**
 * Implement hook_help().
@@ -23,7 +18,6 @@ function ocs_admin_help($path, $arg)
 * Implementation of hook_menu
 */
 function ocs_admin_menu() {
-
     // for admin
     $items['admin/config/system/ocs_admin'] = array(
         'title' => 'Configure Online Charging System',
@@ -32,6 +26,7 @@ function ocs_admin_menu() {
         'page arguments' => array('ocs_admin_config'),
         'access arguments' => array('administer users'),
         'type' => MENU_NORMAL_ITEM,
+        'file' => 'ocs_admin.admin.inc',
     );
 
     // for testing menu
@@ -51,10 +46,20 @@ function ocs_admin_menu() {
     );
 
     // menu items for event
-    $items['ocs_admin/event/update'] = array(
-        'title' => 'Update Event Configuration',
+    $items['ocs_admin/import/ocs'] = array(
+        'title callback' => 'ocs_admin_import_title',
+        'title arguments' => array('OCS'),
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('ocs_admin_event_update'),
+        'page arguments' => array('ocs_admin_import_ocs_config'),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_import.inc',
+    );
+
+    // edit event
+    $items['ocs_admin/event/%/export'] = array(
+        'title' => 'Export Event to Other Client',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('ocs_admin_event_export', 2),
         'access arguments' => array('access content'),
         'file' => 'ocs_event.inc',
     );
@@ -174,7 +179,6 @@ function ocs_admin_menu() {
         'page callback' => 'ocs_member_select',
         'page arguments' => array( 2, 4, 5, 6, 7),     // nojs/type/id/name i.e. customer/1/tom
         'access arguments' => array('access content'),
-        'access arguments' => TRUE,
         'type' => MENU_CALLBACK,
         'file' => 'ocs_group.inc',
     );
@@ -185,6 +189,22 @@ function ocs_admin_menu() {
         'page callback' => 'ocs_admin_product_card_add',
         'page arguments' => array(4),
         'access arguments' => array('access content'),
+    );
+
+     $items['ocs_admin/product/card/%/%ctools_js/product/%/%'] = array(
+        'title' => 'Callback for adding a new product card type',
+        'page callback' => 'ocs_product_select',
+        'page arguments' => array( 3, 4, 'product', 6, 7),     // nojs/type/id/name i.e. customer/1/tom
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+    );
+
+   $items['ocs_admin/product/card/%/%ctools_js/cardtype/%/%'] = array(
+        'title' => 'Callback for adding a new product card type',
+        'page callback' => 'ocs_cardtype_select',
+        'page arguments' => array( 3, 4, 'card', 6, 7),     // nojs/type/id/name i.e. customer/1/tom
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
     );
 
 /*
@@ -249,6 +269,31 @@ function ocs_admin_menu() {
         'file' => 'ocs_counter.inc',
     );
 
+    $items['ocs_admin/account/%/counter/add'] = array(
+        'title' => 'Edit Counter',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_counter_add_form', 2),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_counter.inc',
+    );
+
+    // menu items for state transition
+
+    $items['ocs_admin/export/ocs/transition'] = array(
+        'title' => 'Export State Transition Rules',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_export_state_transition'),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_export.inc',
+    );
+
+    $items['ocs_admin/export/ocs/state'] = array(
+        'title' => 'Export Service Permissions of each State',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array( 'ocs_admin_export_state_svc_perm'),
+        'access arguments' => array('access content'),
+        'file' => 'ocs_export.inc',
+    );
 
 
     return $items;
@@ -273,78 +318,6 @@ function ocs_admin_theme()
             'render element' => 'form',
         ),
     );
-}
-
-function ocs_admin_config( $form, &$form_state) 
-{
-    $form['ocs'] = array(
-        '#type' => 'fieldset',
-        '#title' => 'OCS(Online Charging System)',
-        '#description' => 'OCS Configuration',
-        '#collapsible' => TRUE, 
-        '#collapsed' => FALSE,
-    );
-
-    $form['ocs']['ip_address'] = array(
-        '#type' => 'textfield',
-        '#title' => 'IP Address',
-        '#description' => 'Enter IP Address of OCS',
-        '#default_value' => variable_get('ocs_admin_ip_address',
-            OCS_DEFAULT_IP_ADDRESS),
-    );
-
-    $form['ocs']['user_account'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Account Name',
-        '#description' => 'Enter the name of OCS Account',
-        '#default_value' => variable_get('ocs_admin_user_account',
-            OCS_DEFAULT_USER_ACCOUNT),
-    );
-
-    $form['ocs']['user_password'] = array(
-        '#type' => 'password',
-        '#title' => 'Account Password',
-        '#description' => 'Enter the passworf of OCS Account',
-        '#default_value' => variable_get('ocs_admin_user_password',
-            'Administrative Warning'),
-    );
-
-    $form['ocs']['config_directory'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Configuration Directory',
-        '#description' => 'Enter the directory path which store OCS configuration files',
-        '#default_value' => variable_get('ocs_admin_config_directory',
-            OCS_DEFAULT_CONFIG_DIR),
-    );
-
-    $form['ocs']['ocs_event_file'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Event File Name',
-        '#description' => t('Enter the file name of OCS Event Configuratin'),
-        '#default_value' => variable_get('ocs_admin_ocs_event_file',
-            OCS_DEFAULT_EVENT_FILE_NAME),
-    );
-
-    $form['submit'] = array(
-        '#type' => 'submit',
-        '#value' => 'Save Configuration',
-    );
-
-    return $form;
-}
-
-/*
-    submit OCS configuration
-*/
-function ocs_admin_config_submit( $form, &$form_state) 
-{
-    variable_set('ocs_admin_ip_address', $form_state['values']['ip_address']);
-    variable_set('ocs_admin_user_account', $form_state['values']['user_account']);
-    variable_set('ocs_admin_user_password', $form_state['values']['user_password']);
-    variable_set('ocs_admin_config_directory', $form_state['values']['config_directory']);
-    variable_set('ocs_admin_ocs_event_file', $form_state['values']['ocs_event_file']);
-
-    drupal_set_message( t('The settings have been saved.'));
 }
 
 

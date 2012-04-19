@@ -13,11 +13,9 @@ function ocs_admin_account_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
 {
     dpm( $impl, 'ocs_admin_account_add_page');
     if ( $arg ) {
-        foreach( $arg as $key => $value) {
-            $_SESSION['ocs_admin_account_add'][$key] = $value;
-        }
+        $_SESSION['ocs_admin_account_add'] = array_merge( $_SESSION['ocs_admin_account_add'], $arg);
     }
-    else {
+    else if ( ! isset($_SESSION['ocs_admin_account_add'])) {
         $_SESSION['ocs_admin_account_add'] = array();
     }
 
@@ -44,6 +42,9 @@ function ocs_admin_account_select_row( $args)
 */
 function ocs_account_select( $impl, $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
 {
+    
+    dpm( $impl, 'ocs_account_select');
+    
     $arg = array( 
         $type . '_id' => $id, 
         $type . '_name' => $name,
@@ -646,25 +647,31 @@ function ocs_admin_account_edit_form( $form, &$form_state, $account_key)
         '#value' => $account_key,
     );
 
+    $account = ocs_admin_subscription_load( $account_key);
+
     $form['subscription_key'] = array(
         '#type' => 'hidden',
-        '#value' => $account_key,
+        '#value' => $account['subscription_key'],
     );
 
-    $subs = ocs_admin_subscription_load( $account_key);
+    $subs = ocs_admin_subscription_load( $account['subscription_key']);
     $form['#subscription'] = $subs;
 
     $form['subscription_type'] = array(
-        '#type' => 'textfield',
+        '#type' => 'select',
         '#title' => 'Subscription Type',
         '#description' => 'Enter the subscription type',
+        '#options' => ocs_admin_get_term_list( 'subscription_type'),
         '#default_value' => $subs['subscription_type'],
     );
 
+    $options = ocs_admin_get_term_list( 'charging_type');
+
     $form['charging_type'] = array(
-        '#type' => 'textfield',
+        '#type' => 'select',
         '#title' => 'Charging Type',
         '#description' => 'Enter the charging type',
+        '#options' => ocs_admin_get_term_list( 'charging_type'),
         '#default_value' => $subs['charging_type'],
     );
 
@@ -683,16 +690,18 @@ function ocs_admin_account_edit_form( $form, &$form_state, $account_key)
     );
 
     $form['notification_flag_set'] = array(
-        '#type' => 'textfield',
+        '#type' => 'select',
         '#title' => 'Notification Flag',
         '#description' => 'Enter the new Notification Flag',
+        '#options' => ocs_admin_get_term_list( 'notification_flag_set'),
         '#default_value' => $subs['notification_flag_set'],
     );
 
     $form['preferred_language'] = array(
-        '#type' => 'textfield',
+        '#type' => 'select',
         '#title' => 'Preferred Language',
         '#description' => 'Select preferred language type',
+        '#options' => ocs_admin_get_term_list( 'preferred_language'),
         '#default_value' => $subs['preferred_language'],
     );
 
@@ -825,6 +834,14 @@ function ocs_admin_account_add( $account)
             ->execute();
         dpm( $status, 'db_insert ocs_account result');
 
+        // insert record in abmf_account
+        $result = db_insert( 'abmf_account')
+            ->fields( array(
+                'subscription_key' => $account['account_key'],
+            ))
+            ->execute();
+        dpm( $result, 'db_insert abmf_account result');
+
         // insert record in ocs_counter_tbl
         // set account_key as used
         $result = _ocs_admin_account_key_save( $account['account_key'], array(
@@ -888,6 +905,24 @@ function ocs_admin_account_delete( $account_key)
     db_set_active( 'default');
 }
 
+/*
+    load account 
+*/
+function ocs_admin_account_load( $account_key)
+{
+    db_set_active('ocsdb');
+
+    $query = db_select( 'ocs_account', 'a');
+    $result = $query->fields( 'a')
+                    ->condition( 'account_key', $account_key, '=')
+                    ->execute()
+                    ->fetchAssoc();
+   
+    db_set_active('default');
+
+    return $result;
+}
+
 
 /*
     load customer info
@@ -926,5 +961,40 @@ function ocs_admin_account_key_load( $account_key)
 
     return $result;
 }
+
+
+/*
+
+*/
+function ocs_admin_get_term( $type, $value)
+{
+    $term_list = ocs_admin_get_term_list( $type);
+    if ( isset( $term_list))
+        return $term_list[$value];
+
+    return NULL;
+}
+
+function ocs_admin_get_term_list( $type)
+{
+    $select = &drupal_static(__FUNCTION__, array());
+    if ( !isset($select[$type])) {
+        $var = variable_get( 'ocs_admin_' . $type);
+        if ( ! isset( $var)) return NULL;
+
+//        dpm( $var, $type);
+        $list = preg_split( '/[\n]/', $var);
+ //       dpm( $list, 'list');
+
+        foreach( $list as $item) {
+            $token = explode( '|', $item);
+            $select[$type][ $token[0]] = $token[1];
+        }
+
+//        dpm( $select, 'select '.$type);
+    }
+
+    return $select[$type];
+ }
 
 

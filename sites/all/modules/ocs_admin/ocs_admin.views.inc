@@ -166,7 +166,7 @@ function ocs_admin_table_account()
         'title' => t('Counter'),
         'help' => t('Counter values for this account'),
         'relationship' => array(
-            'base' => 'ocs_counter',
+            'base' => 'abmf_counter',
             'field' => 'subscription_key',
             'handler' => 'views_handler_relationship',
             'label' => t('Counter'),
@@ -504,7 +504,7 @@ function ocs_admin_table_group_member()
         'help' => t('Usage Limitation'),
     ));
 
-    $data['ocs_group_member']['usage'] = _get_numeric_field( array(
+    $data['ocs_group_member']['account_usage'] = _get_numeric_field( array(
         'title' => t('Current Usage'),
         'help' => t('Current Usage'),
     ));
@@ -705,12 +705,18 @@ function ocs_admin_card()
         'help' => t('Account Key'),
     ));
 
+    $data['ocs_card']['status'] = _get_enum_field( 'card_status', array(
+        'title' => t('Status'),
+        'help' => t('Satus'),
+    ));
+
+    /*
     $data['ocs_card']['status'] = _get_string_field( array(
         'title' => t('Status'),
         'help' => t('Satus'),
     ));
+    */
     return $data;
-	
 }
 
 function ocs_admin_table_subscription() 
@@ -732,14 +738,14 @@ function ocs_admin_table_subscription()
     ));
 
 
-    $data['ocs_subscription']['subscription_type'] = _get_string_field( array(
+    $data['ocs_subscription']['subscription_type'] = _get_enum_field( 'subscription_type', array(
         'title' => t('Subscription Type'),
         'help' => t('Subscription Type'),
     ));
 
-    $data['ocs_subscription']['charging_type'] = _get_numeric_field( array(
-        'title' => t('Charging Type'),
-        'help' => t('Charging Type'),
+    $data['ocs_subscription']['charging_type'] = _get_enum_field( 'charging_type', array(
+        'title' => t('Charging Type STR'),
+        'help' => t('Charging Type STR'),
     ));
 
     $data['ocs_subscription']['status'] = _get_numeric_field( array(
@@ -758,12 +764,12 @@ function ocs_admin_table_subscription()
     ));
 
 
-    $data['ocs_subscription']['preferred_language'] = _get_numeric_field( array(
+    $data['ocs_subscription']['preferred_language'] = _get_enum_field( 'preferred_language', array(
         'title' => t('Preferred Language'),
         'help' => t('Preferred Language'),
     ));
 
-    $data['ocs_subscription']['notification_flag_set'] = _get_numeric_field( array(
+    $data['ocs_subscription']['notification_flag_set'] = _get_enum_field( 'notification_flag_set', array(
         'title' => t('Notification Flag'),
         'help' => t('Notification Flag'),
     ));
@@ -879,12 +885,56 @@ function _get_string_field( $info)
     return array_merge( $default_value, $info);
 }
 
+function _get_enum_field( $type, $info)
+{
+    $default_value = array(
+        'field' => array(
+            'handler' => 'views_handler_field_' . $type,
+            'click sortable' => TRUE,
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_string',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+        'argument' => array( 
+            'handler' => 'views_handler_argument_string',
+        ),
+    );
+
+    return array_merge( $default_value, $info);
+}
+
+function _get_status_field( $info)
+{
+    $default_value = array(
+        'field' => array(
+            'handler' => 'views_handler_field_boolean',
+            'click sortable' => TRUE,
+            'output formats' => array(
+                'active-blocked' => array(t('Used'), t('Not Use')),
+            ),
+        ),
+        'filter' => array( 
+            'handler' => 'views_handler_filter_boolean_operator',
+            'label' => t('Active'),
+            'type' => 'yes-no',
+        ),
+        'sort' => array( 
+            'handler' => 'views_handler_sort',
+        ),
+    );
+
+    return array_merge( $default_value, $info);
+}
+
 function ocs_admin_table_counter() 
 {
     // ocs_counter
-    $data['ocs_counter']['table']['name'] = 'ocsdata.ocs_counter';
-    $data['ocs_counter']['table']['group'] = t('OCS Counter');
-    $data['ocs_counter']['table']['base'] = array(
+    $data['abmf_counter']['table']['name'] = 'ocsdata.abmf_counter';
+    $data['abmf_counter']['table']['group'] = t('OCS Counter');
+    $data['abmf_counter']['table']['base'] = array(
         'field' => 'subscription_key',
         'title' => t('OCS Counter'),
         'help' => t('OCS Counter'),
@@ -892,48 +942,48 @@ function ocs_admin_table_counter()
         'weight' => -10,
     );
 
-    $data['ocs_counter']['table']['join'] = array(
+    $data['abmf_counter']['table']['join'] = array(
         'counter_name' => array(
             'left_field' => 'counter_id',
             'field' => 'counter_id',
         ),
     );
 
-    $data['ocs_counter']['subscription_key'] = _get_numeric_field( array( 
+    $data['abmf_counter']['subscription_key'] = _get_numeric_field( array( 
         'title'=> t('Subscription Key'), 
         'help' => t('Subscription Key')));
-    $data['ocs_counter']['counter_id'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_id'] = _get_numeric_field( array(
         'title' => t('Counter ID'), 
         'help' => t('Counter ID')));
-    $data['ocs_counter']['counter_value'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_value'] = _get_numeric_field( array(
         'title' => t('Counter Value'), 
         'help' => t('Counter Value')));
-    $data['ocs_counter']['counter_time_stamp'] = _get_numeric_field(array(
+    $data['abmf_counter']['counter_time_stamp'] = _get_numeric_field(array(
         'title' => t('Counter Time Stamp'), 
         'help' => t('Counter Time Stamp')));
-    $data['ocs_counter']['counter_expire'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_expire'] = _get_numeric_field( array(
         'title' => t('Counter Expire'), 
         'help' => t('Counter Expire')));
-    $data['ocs_counter']['counter_deposit'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_deposit'] = _get_numeric_field( array(
         'title' => t('Counter Deposit'), 
         'help' => t('Counter Deposit')));
-    $data['ocs_counter']['deposit_time'] = _get_numeric_field( array(
+    $data['abmf_counter']['deposit_time'] = _get_numeric_field( array(
         'title' => t('Deposit Time '), 
         'help' => t('Deposit Time')));
-    $data['ocs_counter']['deposit_count'] = _get_numeric_field( array(
+    $data['abmf_counter']['deposit_count'] = _get_numeric_field( array(
         'title' => t('Deposit Count'), 
         'help' => t('Deposit Count')));
-    $data['ocs_counter']['counter_state'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_state'] = _get_numeric_field( array(
         'title' => t('Counter State'), 
         'help' => t('Counter State')));
-    $data['ocs_counter']['counter_max_value'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_max_value'] = _get_numeric_field( array(
         'title' => t('Counter Max Value'), 
         'help' => t('Counter Max Value')));
-    $data['ocs_counter']['counter_value2'] = _get_numeric_field( array(
+    $data['abmf_counter']['counter_value2'] = _get_numeric_field( array(
         'title' => t('Counter Value 2'), 
         'help' => t('Counter Value 2')));
 
-    $data['ocs_counter']['counter_name'] = array(
+    $data['abmf_counter']['counter_name'] = array(
         'title' => t('Counter Name'),
         'help' => t('Counter Name'),
         'relationship' => array(
@@ -948,3 +998,64 @@ function ocs_admin_table_counter()
     return $data;
 	
 }
+
+// view handler
+class views_handler_field_charging_type extends views_handler_field {
+
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'charging_type');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+
+class views_handler_field_notification_flag_set extends views_handler_field {
+
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'notification_flag_set');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+
+class views_handler_field_preferred_language extends views_handler_field {
+
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'preferred_language');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+class views_handler_field_subscription_type extends views_handler_field {
+
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'subscription_type');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+

@@ -100,7 +100,7 @@ function ocs_admin_counter_load( $subscription_key, $counter_id)
 {
     db_set_active('ocsdb');
 
-    $query = db_select( 'ocs_counter', 'a');
+    $query = db_select( 'abmf_counter', 'a');
     $result = $query->fields( 'a')
                     ->condition( 'subscription_key', $subscription_key, '=')
                     ->condition( 'counter_id', $counter_id, '=')
@@ -119,12 +119,14 @@ function ocs_admin_counter_save( $counter)
 {
     db_set_active('ocsdb');
 
-    $result = db_update( 'ocs_counter')
+    $result = db_merge( 'abmf_counter')
+        ->key( array( 
+            'subscription_key' => $counter['subscription_key'],
+            'counter_id' => $counter['counter_id'],
+            ))
         ->fields( $counter)
-        ->condition( 'subscription_key', $counter['subscription_key'], '=')
-        ->condition( 'counter_id', $counter['counter_id'], '=')
         ->execute();
-    dpm( $result, 'db_update ocs_counter result');
+    dpm( $result, 'db_update abmf_counter result');
 
     db_set_active('default');
     
@@ -167,6 +169,106 @@ function ocs_admin_counter_name_load_all()
     } 
 
     return $counter;
+}
+
+function ocs_admin_counter_add_form( $form, &$form_state, $account_key)
+{
+    $form['account_key_markup'] = array(
+        '#type' => 'item',
+        '#title' => 'Account Key',
+        '#markup' => $account_key,
+    );
+
+    $form['account_key'] = array(
+        '#type' => 'hidden',
+        '#value' => $account_key,
+    );
+
+    $account = ocs_admin_account_load( $account_key);
+
+    $form['subscription_key'] = array(
+        '#type' => 'hidden',
+        '#value' => $account['subscription_key'],
+    );
+
+    $all_counter = ocs_admin_counter_name_load_all();
+//    dpm( $all_counter, 'all counter');
+    $form['#all_counter'] = $all_counter;
+
+    $options = array();
+    foreach( $all_counter as $counter) {
+        $options[ $counter['counter_id']] = $counter['counter_name'];
+    }
+
+    $form['type'] = array(
+        '#type' => 'select',
+        '#title' => 'Counter Type',
+        '#description' => 'Select the counter type to add',
+        '#options' => $options,
+    );
+
+    $form['value'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Value',
+        '#description' => 'Enter the new value for this counter',
+        '#default_value' => '0',
+    );
+
+    $date_str = date( 'Y-m-d', time());
+    $form['expire'] = array(
+        '#type' => 'date',
+        '#title' => 'Expire Date',
+        '#description' => 'Enter the new expiration date',
+        '#default_value' => date_parse( $date_str),
+    );
+
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    return $form;
+}
+
+
+/*
+    submit OCS configuration
+*/
+function ocs_admin_counter_add_form_submit( $form, &$form_state) 
+{
+//    dpm( $form_state['values'], 'values');
+    $values = $form_state['values'];
+
+    if ( $values['op'] == 'Save') {
+
+        $counter_name = $form['#all_counter'];
+        $counter_id = $values['type'];
+        $counter_scale = $counter_name[$counter_id]['counter_scale'];
+
+        $counter = array( 
+            'subscription_key' => $values['subscription_key'],
+            'counter_id' => $counter_id,
+            );
+
+        $counter['counter_value'] = $values['value'];
+        if ($counter_scale > 0 ) {
+            $counter['counter_value'] *= $counter_scale;
+        }
+        
+        $date = $values['expire'];
+        $counter['counter_expire'] = strtotime( sprintf( '%04d-%02d-%02d', $date['year'] , $date['month'] , $date['day'])) * 1000;
+        dpm( $counter, 'save counter');
+
+        ocs_admin_counter_save( $counter);
+    }
+    
+    $form_state['redirect'] = 'ocs_admin/account/all/' . $form_state['values']['account_key'];
 }
 
 
