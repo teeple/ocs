@@ -618,21 +618,6 @@ function ocs_admin_product_card()
         'weight' => -10,
     );
 
-/*
-    $data['ocs_card_type']['table']['join'] = array(
-        'ocs_product_card_type' => array(
-            'left_table' => 'ocs_product_card',
-            'left_field' => 'card_type',
-            'field' => 'card_type'
-        ),
-        'ocs_product_product_id' => array(
-            'left_table' => 'ocs_card_type',
-            'left_field' => 'card_type',
-            'field' => 'card_type'
-        ),        
-    );
-*/
-
     $data['ocs_product_card']['card_type'] = _get_string_field( array(
         'title' => t('Card Type'),
         'help' => t('Card Type'),
@@ -644,7 +629,7 @@ function ocs_admin_product_card()
         'help' => t('Product ID'),
     ));
 
-    $data['ocs_product_card']['usable'] = _get_string_field( array(
+    $data['ocs_product_card']['usable'] = _get_enum_field( 'usable_type', array(
         'title' => t('Usable'),
         'help' => t('Usable'),
     ));
@@ -660,7 +645,6 @@ function ocs_admin_product_card()
         ),
     );
     
-//    dpm( $data, 'view_data');
 
     return $data;
 }
@@ -781,9 +765,9 @@ function ocs_admin_table_subscription()
 function ocs_admin_table_counter_name() 
 {
     // ocs_counter_name
-    $data['ocs_counter_name']['table']['name'] = 'ocsdata.ocs_counter_name';
-    $data['ocs_counter_name']['table']['group'] = t('OCS Counter Name');
-    $data['ocs_counter_name']['table']['base'] = array(
+    $data['countername_tbl']['table']['name'] = 'ocsdata.countername_tbl';
+    $data['countername_tbl']['table']['group'] = t('OCS Counter Name');
+    $data['countername_tbl']['table']['base'] = array(
         'field' => 'counter_id',
         'title' => t('OCS Counter Name'),
         'help' => t('Counter Name'),
@@ -791,28 +775,28 @@ function ocs_admin_table_counter_name()
         'weight' => -10,
     );
 
-    $data['ocs_counter_name']['counter_id'] = _get_numeric_field( array(
+    $data['countername_tbl']['counter_id'] = _get_numeric_field( array(
         'title' => t('Counter ID'),
         'help' => t('Counter ID'),
     ));
 
 
-    $data['ocs_counter_name']['counter_name'] = _get_string_field( array(
+    $data['countername_tbl']['counter_name'] = _get_string_field( array(
         'title' => t('Counter Name'),
         'help' => t('Counter Name'),
     ));
 
-    $data['ocs_counter_name']['counter_desc'] = _get_string_field( array(
+    $data['countername_tbl']['counter_desc'] = _get_string_field( array(
         'title' => t('Counter Description'),
         'help' => t('Counter Description'),
     ));
 
-    $data['ocs_counter_name']['counter_type'] = _get_numeric_field( array(
+    $data['countername_tbl']['counter_type'] = _get_numeric_field( array(
         'title' => t('Counter Type'),
         'help' => t('Counter Type'),
     ));
 
-    $data['ocs_counter_name']['counter_scale'] = _get_numeric_field( array(
+    $data['countername_tbl']['counter_scale'] = _get_numeric_field( array(
         'title' => t('Counter Scale'),
         'help' => t('Counter Scale'),
     ));
@@ -987,7 +971,7 @@ function ocs_admin_table_counter()
         'title' => t('Counter Name'),
         'help' => t('Counter Name'),
         'relationship' => array(
-            'base' => 'ocs_counter_name',
+            'base' => 'countername_tbl',
             'field' => 'counter_id',
             'handler' => 'views_handler_relationship',
             'label' => t('Counter Name')
@@ -1044,12 +1028,43 @@ class views_handler_field_preferred_language extends views_handler_field {
     return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
   }
 }
+
 class views_handler_field_subscription_type extends views_handler_field {
 
   function init(&$view, &$options) {
     parent::init($view, $options);
     if (empty($this->options['term_list'])) {
         $this->options['term_list'] = ocs_admin_get_term_list( 'subscription_type');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+
+class views_handler_field_card_status extends views_handler_field {
+
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'card_status');
+    }
+  }
+
+  function render($values) {
+    $value = $this->get_value($values);
+    return ( isset( $this->options['term_list'][$value])) ? $this->options['term_list'][$value] : $value;
+  }
+}
+
+class views_handler_field_usable_type extends views_handler_field {
+  
+  function init(&$view, &$options) {
+    parent::init($view, $options);
+    if (empty($this->options['term_list'])) {
+        $this->options['term_list'] = ocs_admin_get_term_list( 'usable_type');
     }
   }
 

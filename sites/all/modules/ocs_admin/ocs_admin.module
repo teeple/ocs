@@ -46,7 +46,7 @@ function ocs_admin_menu() {
     );
 
     // menu items for event
-    $items['ocs_admin/import/ocs'] = array(
+    $items['ocs_admin/config/ocs/import'] = array(
         'title callback' => 'ocs_admin_import_title',
         'title arguments' => array('OCS'),
         'page callback' => 'drupal_get_form',
@@ -56,12 +56,12 @@ function ocs_admin_menu() {
     );
 
     // edit event
-    $items['ocs_admin/event/%/export'] = array(
+    $items['ocs_admin/config/ocs/event/%/export'] = array(
         'title' => 'Export Event to Other Client',
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('ocs_admin_event_export', 2),
+        'page arguments' => array('ocs_admin_event_export', 4),
         'access arguments' => array('access content'),
-        'file' => 'ocs_event.inc',
+        'file' => 'ocs_import.inc',
     );
 
     // menu items for account management 
@@ -279,7 +279,7 @@ function ocs_admin_menu() {
 
     // menu items for state transition
 
-    $items['ocs_admin/export/ocs/transition'] = array(
+    $items['ocs_admin/config/ocs/export/transition'] = array(
         'title' => 'Export State Transition Rules',
         'page callback' => 'drupal_get_form',
         'page arguments' => array( 'ocs_admin_export_state_transition'),
@@ -287,7 +287,7 @@ function ocs_admin_menu() {
         'file' => 'ocs_export.inc',
     );
 
-    $items['ocs_admin/export/ocs/state'] = array(
+    $items['ocs_admin/config/ocs/export/svcperm'] = array(
         'title' => 'Export Service Permissions of each State',
         'page callback' => 'drupal_get_form',
         'page arguments' => array( 'ocs_admin_export_state_svc_perm'),

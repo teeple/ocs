@@ -155,7 +155,7 @@ function ocs_admin_counter_name_load_all()
        else {
            db_set_active('ocsdb');
 
-           $query = db_select( 'ocs_counter_name', 'g');
+           $query = db_select( 'countername_tbl', 'g');
            $counter = $query->fields( 'g')
                 ->execute()
                 ->fetchAllAssoc( 'counter_id', PDO::FETCH_ASSOC);

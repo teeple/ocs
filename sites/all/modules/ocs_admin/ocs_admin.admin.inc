@@ -31,6 +31,10 @@ define( 'OCS_ADMIN_CARD_STATUS',
 '0|Not Used
 1|Used');
 
+define( 'OCS_ADMIN_USABLE_TYPE',
+'0|Unusable
+1|Usable');
+
 
 function ocs_admin_config( $form, &$form_state) 
 {
@@ -149,7 +153,14 @@ function ocs_admin_config( $form, &$form_state)
         '#default_value' => variable_get( 'ocs_admin_card_status', OCS_ADMIN_CARD_STATUS),
     );
 
-    $form['submit'] = array(
+    $form['account']['usable_type'] = array(
+        '#type' => 'textarea',
+        '#title' => 'Usable Type',
+        '#description' => t('Input available values for "Card Type Status" with format "value|name"'),
+        '#default_value' => variable_get( 'ocs_admin_usable_type', OCS_ADMIN_USABLE_TYPE),
+    );
+
+   $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Save Configuration',
     );
@@ -175,6 +186,7 @@ function ocs_admin_config_submit( $form, &$form_state)
     variable_set('ocs_admin_preferred_language', $form_state['values']['preferred_language']);
     variable_set('ocs_admin_notification_flag_set', $form_state['values']['notification_flag_set']);
     variable_set('ocs_admin_card_status', $form_state['values']['card_status']);
+    variable_set('ocs_admin_usable_type', $form_state['values']['usable_type']);
 
     drupal_set_message( t('The settings have been saved.'));
 }
