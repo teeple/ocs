@@ -136,7 +136,7 @@ function ocs_admin_import_ocs_config_submit( $form, &$form_state)
         }
     }
 
-    $form_state['redirect'] = 'ocs_admin/event';
+    $form_state['redirect'] = 'ocs_admin/config/ocs';
 
 }
 

@@ -6,7 +6,7 @@
 */
 function ocs_admin_card_form( $form, &$form_state, $type, $cardtype)
 {    
-//    dpm($type, 'ocs_card_type');
+    $cardtype = cardtype_load($cardtype);
 
     $form['card_type'] = array(
         '#type' => 'hidden',
@@ -238,19 +238,18 @@ function ocs_admin_card_form_add_panel( $form, &$form_state, $arg=NULL)
     return $form;
 }
 
-function ocs_admin_card_form_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
+function ocs_admin_card_pct_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
 {
-    // dpm($impl, 'ocs_admin_card_form_add_page');
-    if ($arg) {
-        $_SESSION['product_card'] = array_merge( $_SESSION['product_card'], $arg);
-    }
-    else if (!isset($_SESSION['product_card'])) {
-        $_SESSION['product_card'] = array();
-    }
-    
-    $form = drupal_get_form('ocs_admin_card_form_add'.$impl, $_SESSION['product_card']);
-    $output = '<div id="ocs_admin_card_form_add_div">'. drupal_render($form) . '</div>';
+    $impl = '_wizard';
 
+    if (! isset($_SESSION['ocs_admin_productcard_save'])) {
+        $_SESSION['ocs_admin_productcard_save'] = array();
+    }
+    $_SESSION['ocs_admin_productcard_save'] = array_merge($_SESSION['ocs_admin_productcard_save'], $_GET);
+    
+    $form = drupal_get_form('ocs_admin_productcard'.$impl, $_SESSION['ocs_admin_productcard_save']);
+    $output = '<div id="ocs_admin_productcard_div">' . drupal_render( $form) . '</div>';
+    
     return $output;
 }
 
@@ -331,7 +330,7 @@ function ocs_admin_card_form_add_panel_submit($form, &$form_state)
 {
     if ($form_state['values']['op'] == 'Save') {
         $form_state['redirect'] = 'ocs_admin/product/card';
-        if (ocs_admin_product_cardtype_save ($form_state['values'])) {
+        if (ocs_admin_productcard_save ($form_state['values'])) {
             drupal_set_message('Connected product and cardtype');    
         }
     } else if ($form_state['values']['op'] == 'Cancel') {
@@ -339,7 +338,7 @@ function ocs_admin_card_form_add_panel_submit($form, &$form_state)
     }
 }
 
-function ocs_admin_product_cardtype_save($cardtype)
+function ocs_admin_productcard_save($cardtype)
 {
     if ( ! isset($cardtype['card_type']) || ! isset($cardtype['product_id'])) {
         drupal_set_message( 'Insufficient parameters to connect product and cardtype', 'warning');
@@ -380,4 +379,66 @@ function ocs_admin_product_cardtype_save($cardtype)
             }
     }
     db_set_active('default');
+}
+
+function ocs_admin_productcard_wizard( $form, &$form_state, $arg = NULL)
+{
+    /* Card Type */
+    dsm('ocs_admin_connect_form_wizard');
+
+    $form = array();
+    $form['section'] = array(
+        '#type' => 'fieldset',
+        '#description' => 'Input parameters to connenct card type and product.',
+    );
+
+    $form['section']['cardtype'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Card Type'),
+        '#collapsible'=> TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Card Type</em> button to find a card type.',
+        '#attributes' => array('class' => array('column')),
+    );
+
+    $form['section']['cardtype']['card_type'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Card Type'),
+        '#size' => '30',
+    );
+
+
+    $form['section']['cardtype']['description'] = array(
+        '#type' => 'item',
+        '#title' => t('Description : @description',
+            array('@description' => isset($arg['section']['cardtype']['description']) ? 
+                                          $arg['section']['cardtype']['description'] : '')),
+    );
+    
+    $form['section']['product'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Product'),
+        '#collapsible'=> TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Product</em> button to find a product.',
+        '#attributes' => array('class' => array('column')),
+    );
+
+     $form['section']['product']['product_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Product ID'),
+        '#size' => '30',
+    );
+
+
+    $form['section']['product']['product_name'] = array(
+        '#type' => 'item',
+        '#title' => t('Product Name : @product_name',
+            array('@product_name' => isset($arg['section']['product']['product_name']) ? 
+                                           $arg['section']['product']['product_name'] : '')),
+    );
+    
+
+
+    return $form;
 }

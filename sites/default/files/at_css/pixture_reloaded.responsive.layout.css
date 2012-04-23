@@ -38,11 +38,11 @@
 }
 /* Standard layout three-col-left */
 @media only screen and (min-width:1025px) {
-.two-sidebars .content-inner {margin-left: 50%; margin-right: 0;}
-.sidebar-first .content-inner {margin-left: 25%; margin-right: 0;}
-.sidebar-second .content-inner {margin-left: 25%; margin-right: 0;}
-.region-sidebar-first {width: 25%; margin-left: -100%;}
-.region-sidebar-second {width: 25%; margin-left: -100%; clear: none;}
-.two-sidebars .region-sidebar-second {width: 25%; position: relative; left: 25% ;}
+.two-sidebars .content-inner {margin-left: 40%; margin-right: 0;}
+.sidebar-first .content-inner {margin-left: 20%; margin-right: 0;}
+.sidebar-second .content-inner {margin-left: 20%; margin-right: 0;}
+.region-sidebar-first {width: 20%; margin-left: -100%;}
+.region-sidebar-second {width: 20%; margin-left: -100%; clear: none;}
+.two-sidebars .region-sidebar-second {width: 20%; position: relative; left: 20% ;}
 .container {width: 100%; max-width: 1260px;}
 }

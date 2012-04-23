@@ -44,6 +44,14 @@ function ocs_admin_counter_edit_form( $form, &$form_state, $account_key, $subscr
             $counter['counter_value'] / $counter_name['counter_scale'] : $counter['counter_value'],
     );
 
+    $form['value2'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Value 2',
+        '#description' => 'Enter the new value for this counter',
+        '#default_value' => ($counter_name['counter_scale'] > 0) ? 
+            $counter['counter_value2'] / $counter_name['counter_scale'] : $counter['counter_value2'],
+    );
+
     $date_str = date( 'Y-m-d', $counter['counter_expire']/1000);
 //    dpm( $date_str, 'date str');
     $form['expire'] = array(
@@ -81,11 +89,16 @@ function ocs_admin_counter_edit_form_submit( $form, &$form_state)
         if ($counter_scale > 0 ) {
             $counter['counter_value'] *= $counter_scale;
         }
+
+        $counter['counter_value2'] = $form_state['values']['value2'];
+        if ($counter_scale > 0 ) {
+            $counter['counter_value2'] *= $counter_scale;
+        }
         
         $date = $form_state['values']['expire'];
         $counter['counter_expire'] = strtotime( sprintf( '%04d-%02d-%02d', $date['year'] , $date['month'] , $date['day'])) * 1000;
-        dpm( $date, 'date');
-        dpm( $counter, 'save counter');
+//        dpm( $date, 'date');
+//        dpm( $counter, 'save counter');
 
         ocs_admin_counter_save( $counter);
     }
@@ -126,7 +139,7 @@ function ocs_admin_counter_save( $counter)
             ))
         ->fields( $counter)
         ->execute();
-    dpm( $result, 'db_update abmf_counter result');
+//    dpm( $result, 'db_update abmf_counter result');
 
     db_set_active('default');
     
@@ -160,7 +173,7 @@ function ocs_admin_counter_name_load_all()
                 ->execute()
                 ->fetchAllAssoc( 'counter_id', PDO::FETCH_ASSOC);
 
-            dpm( $counter, 'fetched counter name');
+//            dpm( $counter, 'fetched counter name');
             cache_set( 'ocs_admin_counter_name', $counter);
 //            dpm( cache_get( 'ocs_admin_counter_name'), 'cache after setting');
 
@@ -214,6 +227,13 @@ function ocs_admin_counter_add_form( $form, &$form_state, $account_key)
         '#default_value' => '0',
     );
 
+    $form['value2'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Value 2',
+        '#description' => 'Enter the new value for this counter',
+        '#default_value' => '0',
+    );
+
     $date_str = date( 'Y-m-d', time());
     $form['expire'] = array(
         '#type' => 'date',
@@ -259,6 +279,11 @@ function ocs_admin_counter_add_form_submit( $form, &$form_state)
         $counter['counter_value'] = $values['value'];
         if ($counter_scale > 0 ) {
             $counter['counter_value'] *= $counter_scale;
+        }
+
+        $counter['counter_value2'] = $values['value2'];
+        if ($counter_scale > 0 ) {
+            $counter['counter_value2'] *= $counter_scale;
         }
         
         $date = $values['expire'];

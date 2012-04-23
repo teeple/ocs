@@ -11,13 +11,11 @@
 */
 function ocs_admin_account_add_page( $impl = NULL, $arg = NULL, $init = TRUE) 
 {
-    dpm( $impl, 'ocs_admin_account_add_page');
-    if ( $arg ) {
-        $_SESSION['ocs_admin_account_add'] = array_merge( $_SESSION['ocs_admin_account_add'], $arg);
-    }
-    else if ( ! isset($_SESSION['ocs_admin_account_add'])) {
+    $impl = '_wizard';
+    if ( ! isset($_SESSION['ocs_admin_account_add'])) {
         $_SESSION['ocs_admin_account_add'] = array();
     }
+    $_SESSION['ocs_admin_account_add'] = array_merge( $_SESSION['ocs_admin_account_add'], $_GET);
 
     $form = drupal_get_form( 'ocs_admin_account_add_form'.$impl , $_SESSION['ocs_admin_account_add']);
     $output = '<div id="ocs_admin_account_add_form_div">' . drupal_render( $form) . '</div>';
@@ -31,9 +29,14 @@ function ocs_admin_account_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
 */
 function ocs_admin_account_select_row( $args)
 {
-    ctools_include('ajax'); // Module  include the dependence it needs for ajax.
-    $link = ctools_ajax_text_button( t('select'), current_path()."/nojs/".$args, t('select'));
-    return $link;
+    //ctools_include('ajax'); // Module  include the dependence it needs for ajax.
+    drupal_add_library('system', 'drupal.ajax');
+    $dest = current_path() . '/nojs'. (is_array( $args) ? '' : $arg);
+
+    return l( t('select'), $dest, array('html' => TRUE, 
+        'attributes' => array('class' => array('use-ajax')),
+        'query' => (is_array($args) ? $args : NULL)
+        ));
 }
 
 /*
@@ -269,6 +272,190 @@ function ocs_admin_db_account_add( $values)
     db_set_active('default');
  }
  */
+
+/* 
+** build form for adding account
+** wizard table version
+*/
+function ocs_admin_account_add_form_wizard( $form, &$form_state, $arg = NULL)
+{
+    ///////////////////////// customer list
+
+    $form = array();
+    $form['section'] = array(
+        '#type' => 'fieldset',
+        '#description' => 'Input parameters to create an account.',
+    );
+
+    $form['section']['customer'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Customer'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Search</em> button to find a customer.',
+        '#attributes' => array( 'class' => array( 'column')),
+    );
+
+    $form['section']['customer']['customer_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Customer ID'),
+        '#size' => '30',
+    );
+
+    $form['section']['customer']['customer_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Customer Name'),
+        '#size' => '30',
+    );
+
+    $form['section']['customer']['customer_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Customer',
+    );
+
+    ////////// product list
+
+    $form['section']['product'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Product'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Search</em> button to find a product.',
+        '#attributes' => array( 'class' => array( 'column')),
+    );
+
+    $form['section']['product']['product_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Product ID'),
+        '#size' => '30',
+     );
+
+    $form['section']['product']['product_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Product Name'),
+        '#size' => '30',
+    );
+
+    $form['section']['product']['product_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Product',
+    );
+
+
+    ////////// account key : MSISDN
+
+    $form['section']['account'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Account Key'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Search</em> button to find an empty account key.',
+        '#attributes' => array( 'class' => array( 'column')),
+    );
+
+    $form['section']['account']['account_key'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Account Key'),
+        '#size' => '30',
+     );
+
+    $form['section']['account']['account_key_name'] = array(
+        '#type' => 'select',
+        '#title' => t('Key Type'),
+        '#options' => array(
+            'Gold(Mobile)' => 'Gold(Mobile)',
+            'Bronze(Mobile)' => 'Bronze(Mobile)',
+        ),
+     );
+
+    $form['section']['account']['account_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Account Key',
+    );
+
+    $form['actions'] = array( '#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Confirm'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    if ( $arg) {
+        $form['section']['customer']['customer_id']['#default_value'] = $arg['customer_id'];
+        $form['section']['customer']['customer_name']['#default_value'] = $arg['customer_name'];
+        $form['section']['product']['product_name']['#default_value'] = $arg['product_name'];
+        $form['section']['product']['product_id']['#default_value'] = $arg['product_id'];
+        $form['section']['account']['account_key']['#default_value'] = $arg['account_key'];
+        $form['section']['account']['account_key_name']['#default_value'] = $arg['account_key_name'];
+    }
+
+    return $form;
+}
+
+function ocs_admin_account_add_form_wizard_validate( $form, &$form_state)
+{
+    // check parameters
+    if ( $form_state['values']['op'] == 'Confirm') {
+        dpm( $form_state, 'validate: ');
+
+        $account_key = ocs_admin_account_key_load( $form_state['values']['account_key']);
+        if ( ! $account_key) {
+            form_set_error( 'account_key', 'Invalid account key');
+        }
+
+        $customer_id = ocs_admin_customer_load( $form_state['values']['customer_id']);
+        if ( ! $customer_id) {
+            form_set_error( 'customer_id', 'Invalid customer ID');
+        }
+
+        $product_id = ocs_admin_product_load( $form_state['values']['product_id']);
+        if ( ! $product_id) {
+            form_set_error( 'product_id', 'Invalid product ID');
+        }
+    }
+}
+
+function ocs_admin_account_add_form_wizard_submit( $form, &$form_state)
+{
+    $values = $form_state['values'];
+    if ( $values['op'] == 'Search Customer') {
+        $query = array(
+            'customer_id' => $values['customer_id'],
+            'customer_name' => $values['customer_name'],
+        );
+        drupal_goto( 'ocs_admin/customer/select', array( 'query' => $query));
+    }
+    else if ( $values['op'] == 'Search Product') {
+        $query = array(
+            'product_id' => $values['product_id'],
+            'product_name' => $values['product_name'],
+        );
+        drupal_goto( 'ocs_admin/product/select', array( 'query' => $query));
+    }
+    else if ( $values['op'] == 'Search Account Key') {
+        $query = array(
+            'account_key' => $values['account_key'],
+            'account_key_name' => $values['account_key_name'],
+        );
+        drupal_goto( 'ocs_admin/resource/key/select', array( 'query' => $query));
+    }
+    else {
+        $form_state['redirect'] = 'ocs_admin/account';
+        dpm( $form_state, 'submit: ');
+
+        if ( $values['op'] == 'Confirm') {
+            // save to DB
+            dsm( 'confirmed: ');
+            if ( ocs_admin_account_add( $values)) {
+                drupal_set_message( 'A new account is created.');
+            }
+        }
+    }
+}
 
 /* 
 ** build form for adding account
@@ -815,7 +1002,8 @@ function ocs_admin_account_add( $account)
             'notification_flag_set' => 0,
         );
 
-        $result = db_insert( 'ocs_subscription')
+        $result = db_merge( 'ocs_subscription')
+            ->key( array( 'subscription_key' => $account['account_key']))
             ->fields( $default_value)
             ->execute();
         dpm( $result, 'db_insert ocs_subscription result');
@@ -829,13 +1017,15 @@ function ocs_admin_account_add( $account)
             'product_id' => $account['product_id'],
             );
 
-        $status = db_insert( 'ocs_account')
+        $status = db_merge( 'ocs_account')
+            ->key( array( 'account_key' => $account['account_key']))
             ->fields( $fields)
             ->execute();
         dpm( $status, 'db_insert ocs_account result');
 
         // insert record in abmf_account
-        $result = db_insert( 'abmf_account')
+        $result = db_merge( 'abmf_account')
+            ->key( array( 'subscription_key' => $account['account_key']))
             ->fields( array(
                 'subscription_key' => $account['account_key'],
             ))
@@ -962,39 +1152,5 @@ function ocs_admin_account_key_load( $account_key)
     return $result;
 }
 
-
-/*
-
-*/
-function ocs_admin_get_term( $type, $value)
-{
-    $term_list = ocs_admin_get_term_list( $type);
-    if ( isset( $term_list))
-        return $term_list[$value];
-
-    return NULL;
-}
-
-function ocs_admin_get_term_list( $type)
-{
-    $select = &drupal_static(__FUNCTION__, array());
-    if ( !isset($select[$type])) {
-        $var = variable_get( 'ocs_admin_' . $type);
-        if ( ! isset( $var)) return NULL;
-
-//        dpm( $var, $type);
-        $list = preg_split( '/[\n]/', $var);
- //       dpm( $list, 'list');
-
-        foreach( $list as $item) {
-            $token = explode( '|', $item);
-            $select[$type][ $token[0]] = $token[1];
-        }
-
-//        dpm( $select, 'select '.$type);
-    }
-
-    return $select[$type];
- }
 
 

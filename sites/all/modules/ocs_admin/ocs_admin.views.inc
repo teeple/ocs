@@ -451,6 +451,11 @@ function ocs_admin_table_group()
         'help' => t('Parent Group ID'),
     ));
 
+    $data['ocs_group']['ancestor_group_id'] = _get_numeric_field( array(
+        'title' => t('Ancestor Group ID'),
+        'help' => t('Ancestor Group ID'),
+    ));
+
     $data['ocs_group']['group_name'] = _get_string_field( array(
         'title' => t('Group Name'),
         'help' => t('Group Name'),

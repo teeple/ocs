@@ -1,8 +1,7 @@
 <?php
 
-module_load_include( 'inc', 'ocs_admin', 'ocs_account');
-module_load_include( 'inc', 'ocs_admin', 'ocs_group');
-module_load_include( 'inc', 'ocs_admin', 'ocs_card');
+//module_load_include( 'inc', 'ocs_admin', 'ocs_group');
+//module_load_include( 'inc', 'ocs_admin', 'ocs_card');
 
 /**
 * Implement hook_help().
@@ -65,16 +64,12 @@ function ocs_admin_menu() {
     );
 
     // menu items for account management 
-
-    /* it's not used.
-        Panel 'ocs_account_form' shall be called instead
-    $items['ocs_admin/account/add/%'] = array(
+    $items['ocs_admin/account/add'] = array(
         'title' => 'Add New Account',
         'page callback' => 'ocs_admin_account_add_page',
-        'page arguments' => array(3),
         'access arguments' => array('access content'),
+        'file' => 'ocs_account.inc',
     );
-    */
 
     $items['ocs_admin/account/add/%/%ctools_js/%/%/%'] = array(
         'title' => 'Callback for adding a new account',
@@ -102,59 +97,16 @@ function ocs_admin_menu() {
 
     // menu items for group management
 
-    $items['ocs_admin/group/%group'] = array(
-        'title' => 'Edit Group',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_form', 2),
-        'access arguments' => array('access content'),
-        'file' => 'ocs_group.inc',
-     );
-
-    $items['ocs_admin/group/%group/edit'] = array(
-        'title' => 'Edit Group',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_edit_form', 'edit', 2),
-        'access arguments' => array('access content'),
-        'type' => MENU_LOCAL_TASK,
-        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-        'file' => 'ocs_group.inc',
-    );
-
-    $items['ocs_admin/group/add'] = array(
-        'title' => 'Add Group',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_edit_form', 'add', 2),
-        'access arguments' => array('access content'),
-        'type' => MENU_LOCAL_TASK,
-        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-        'file' => 'ocs_group.inc',
-    );
-
-     $items['ocs_admin/group/%group/list'] = array(
-        'title' => 'List Sub Groups',
-        'weight' => -10,
-        'type' => MENU_DEFAULT_LOCAL_TASK,
-        'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-     );
-
-    $items['ocs_admin/group/%group/add'] = array(
-        'title' => 'Add Sub Group',
-        'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_subgroup_form', 'add', 2),
-        'access arguments' => array('access content'),
-        'type' => MENU_LOCAL_ACTION,
-        'file' => 'ocs_group.inc',
-    );
-
     $items['ocs_admin/group/%group/delete'] = array(
         'title callback' => 'ocs_admin_group_title',
         'title arguments' => array('Delete', 2),
         'page callback' => 'drupal_get_form',
-        'page arguments' => array( 'ocs_admin_group_delete_subgroup_confirm', 2),
+        'page arguments' => array( 'ocs_admin_group_delete_confirm', 2),
         'access arguments' => array('access content'),
         'file' => 'ocs_group.inc',
     );
 
+    /*
     $items['ocs_admin/group/%group/member/%/edit'] = array(
         'title' => 'Edit Member',
         'page callback' => 'drupal_get_form',
@@ -172,19 +124,32 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_group.inc',
     );
+    */
 
     // MAX_MENU_PATH is 9
-    $items['ocs_admin/group/%group/addmember/%ctools_js/%/%/%'] = array(
+    /*
+    $items['ocs_admin/group/%group/member/add/%ctools_js/%/%/%'] = array(
         'title' => 'Callback for adding a new member',
         'page callback' => 'ocs_member_select',
-        'page arguments' => array( 2, 4, 5, 6, 7),     // nojs/type/id/name i.e. customer/1/tom
+        'page arguments' => array( 2, 5, 6, 7, 8),     // nojs/type/id/name i.e. customer/1/tom
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+        'file' => 'ocs_group.inc',
+    );
+    */
+
+    $items['ocs_admin/group/%/member/add/%ctools_js'] = array(
+        'title' => 'Callback for adding a new member',
+        'page callback' => 'ocs_member_select',
+        'page arguments' => array( 2, 5),     // nojs/type/id/name i.e. customer/1/tom
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
         'file' => 'ocs_group.inc',
     );
 
-     // OCS Product Card
-     $items['ocs_admin/card/product/card/%'] = array(
+
+/*
+    $items['ocs_admin/card/product/card/%'] = array(
         'title' => 'Connect product and card type',
         'page callback' => 'ocs_admin_product_card_add',
         'page arguments' => array(4),
@@ -207,7 +172,7 @@ function ocs_admin_menu() {
         'type' => MENU_CALLBACK,
     );
 
-/*
+
     $items['ocs_admin/card/product/%/add'] = array(
         'title' => 'Related Product',
         'page callback' => 'drupal_get_form',
@@ -215,7 +180,7 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_card.inc',
     );
-*/
+
 
     // menu items for add cardtype management
     $items['ocs_admin/card/cardtype/add'] = array(
@@ -234,7 +199,7 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_card.inc',
     );
-
+*/
     // menu items for campaign management
 
     $items['ocs_admin/campaign'] = array(
@@ -295,6 +260,16 @@ function ocs_admin_menu() {
         'file' => 'ocs_export.inc',
     );
 
+    // menu items for customer selection
+    $items['ocs_admin/customer/select/%ctools_js/%/%/%'] = array(
+        'title' => 'Callback for selecting a customer',
+        'page callback' => 'ocs_customer_select',
+        'page arguments' => array( 3, 4, 5, 6),     // nojs/type/id/name i.e. customer/1/tom
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+        'file' => 'ocs_customer.inc',
+    );
+
 
     return $items;
 }
@@ -308,6 +283,11 @@ function ocs_admin_theme()
         'ocs_admin_group_form' => array(
             'file' => 'ocs_group.inc',
             'render element' => 'form',
+        ),
+        'ocs_admin_member_list' => array(
+            'file' => 'ocs_group.inc',
+            'render element' => 'form',
+//            'variables' => array( 'title' => NULL, 'name' => NULL, 'description' => NULL),
         ),
         'ocs_admin_group_overview' => array(
             'file' => 'ocs_group.inc',
@@ -461,37 +441,6 @@ function ocs_admin_taxonomy_term_load($terms) {
   }
 }
 */
-
-/*
-    load group 
-*/
-function group_load( $groupid) 
-{
-    $all_group = group_load_all();
-    return isset( $all_group[$groupid]) ? $all_group[$groupid] : FALSE;
-}
-
-/*
-    load all group
-*/
-function group_load_all()
-{
-   $groups = &drupal_static(__FUNCTION__);
-   if ( !isset( $groups)) {
-       db_set_active('ocsdb');
-
-       $query = db_select( 'ocs_group', 'g');
-       $groups = $query->fields( 'g')
-            ->execute()
-            ->fetchAllAssoc( 'group_id', PDO::FETCH_ASSOC);
-
-//        dpm( $groups, 'fetched groups');
-
-        db_set_active('default');
-    } 
-
-    return $groups;
-}
 
 /*
     add card type
@@ -656,4 +605,44 @@ function cardtype_load( $cardtype )
 
     return $result;
 }
+
+
+
+/********************
+Utility functions
+*********************/
+/*
+
+*/
+function ocs_admin_get_term( $type, $value)
+{
+    $term_list = ocs_admin_get_term_list( $type);
+    if ( isset( $term_list))
+        return $term_list[$value];
+
+    return NULL;
+}
+
+function ocs_admin_get_term_list( $type)
+{
+    $select = &drupal_static(__FUNCTION__, array());
+    if ( !isset($select[$type])) {
+        $var = variable_get( 'ocs_admin_' . $type);
+        if ( ! isset( $var)) return NULL;
+
+//        dpm( $var, $type);
+        $list = preg_split( '/[\n]/', $var);
+ //       dpm( $list, 'list');
+
+        foreach( $list as $item) {
+            $token = explode( '|', $item);
+            $select[$type][ $token[0]] = $token[1];
+        }
+
+//        dpm( $select, 'select '.$type);
+    }
+
+    return $select[$type];
+ }
+
 

@@ -38,3 +38,9 @@ ul.action-links a {
     line-height: 30px; 
 }
 
+.column {
+    float: left;
+    margin: 0 1em 0 0; 
+}
+
+

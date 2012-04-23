@@ -105,7 +105,7 @@ function ocs_admin_export_state_transition( $form, &$form_state)
 }
 
 
-function ocs_admin_export_state_submit( $form, &$form_state)
+function ocs_admin_export_state_transition_submit( $form, &$form_state)
 {
     $values = $form_state['values'];
 
@@ -135,7 +135,7 @@ function ocs_admin_export_state_submit( $form, &$form_state)
         }
     }
 
-    $form_state['redirect'] = 'ocs_admin/state/transition';
+    $form_state['redirect'] = 'ocs_admin/config/ocs/state/transition';
 }
 
 function _ftp_put( $ip_address, $user, $passwd, $dir, $file)
@@ -321,7 +321,7 @@ function ocs_admin_export_state_svc_perm_submit( $form, &$form_state)
         }
     }
 
-    $form_state['redirect'] = 'ocs_admin/state';
+    $form_state['redirect'] = 'ocs_admin/config/ocs/svcperm';
 }
 
 
