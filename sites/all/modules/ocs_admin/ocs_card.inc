@@ -241,7 +241,6 @@ function ocs_admin_card_form_add_panel( $form, &$form_state, $arg=NULL)
 function ocs_admin_card_pct_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
 {
     $impl = '_wizard';
-
     if (! isset($_SESSION['ocs_admin_productcard_save'])) {
         $_SESSION['ocs_admin_productcard_save'] = array();
     }
@@ -384,42 +383,17 @@ function ocs_admin_productcard_save($cardtype)
 function ocs_admin_productcard_wizard( $form, &$form_state, $arg = NULL)
 {
     /* Card Type */
-    dsm('ocs_admin_connect_form_wizard');
-
     $form = array();
     $form['section'] = array(
         '#type' => 'fieldset',
-        '#description' => 'Input parameters to connenct card type and product.',
+        '#description' => 'Input parameters to connect a card type and a product.',
     );
 
-    $form['section']['cardtype'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Card Type'),
-        '#collapsible'=> TRUE,
-        '#collapsed' => FALSE,
-        '#description' => 'Click the <em>Card Type</em> button to find a card type.',
-        '#attributes' => array('class' => array('column')),
-    );
-
-    $form['section']['cardtype']['card_type'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Card Type'),
-        '#size' => '30',
-    );
-
-
-    $form['section']['cardtype']['description'] = array(
-        '#type' => 'item',
-        '#title' => t('Description : @description',
-            array('@description' => isset($arg['section']['cardtype']['description']) ? 
-                                          $arg['section']['cardtype']['description'] : '')),
-    );
-    
     $form['section']['product'] = array(
         '#type' => 'fieldset',
         '#title' => t('Product'),
-        '#collapsible'=> TRUE,
-        '#collapsed' => FALSE,
+//        '#collapsible'=> TRUE,
+//        '#collapsed' => FALSE,
         '#description' => 'Click the <em>Product</em> button to find a product.',
         '#attributes' => array('class' => array('column')),
     );
@@ -432,13 +406,82 @@ function ocs_admin_productcard_wizard( $form, &$form_state, $arg = NULL)
 
 
     $form['section']['product']['product_name'] = array(
-        '#type' => 'item',
-        '#title' => t('Product Name : @product_name',
-            array('@product_name' => isset($arg['section']['product']['product_name']) ? 
-                                           $arg['section']['product']['product_name'] : '')),
+        '#type' => 'textfield',
+        '#title' => t('Product Name'),
+        '#size' => '30',
     );
     
+    $form['section']['product']['product_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Product',
+    );
 
 
+    $form['section']['cardtype'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Card Type'),
+//        '#collapsible'=> TRUE,
+//        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Card Type</em> button to find a card type.',
+        '#attributes' => array('class' => array('column')),
+    );
+
+    $form['section']['cardtype']['card_type'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Card Type'),
+        '#size' => '30',
+    );
+
+
+    $form['section']['cardtype']['description'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Description',
+    );
+
+    $form['section']['cardtype']['cardtype_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Card Type',
+    );
+   
+    if ($arg) {
+        $form['section']['cardtype']['card_type']['#default_value'] = $arg['card_type'];    
+        $form['section']['cardtype']['description']['#default_value'] = $arg['description'];    
+        $form['section']['product']['product_id']['#default_value'] = $arg['product_id'];    
+        $form['section']['product']['product_name']['#default_value'] = $arg['product_name'];    
+    } 
+    
     return $form;
 }
+
+function ocs_admin_productcard_wizard_submit( $form, &$form_state)
+{
+    $values = $form_state['values'];
+    if ( $values['op'] == 'Search Card Type') {
+        $query = array(
+            'card_type' => $values['card_type'],
+            'description' => $values['description'],
+        );
+        drupal_goto( 'ocs_admin/card/cardtype/select', array( 'query' => $query));
+    }
+    else if ( $values['op'] == 'Search Product') {
+        $query = array(
+            'product_id' => $values['product_id'],
+            'product_name' => $values['product_name'],
+        );
+        drupal_goto( 'ocs_admin/card/cardtype/product/select', array( 'query' => $query));
+    }
+   else {
+        $form_state['redirect'] = 'ocs_admin/account';
+        dpm( $form_state, 'submit: ');
+
+        if ( $values['op'] == 'Confirm') {
+            // save to DB
+            dsm( 'confirmed: ');
+            if ( ocs_admin_account_add( $values)) {
+                drupal_set_message( 'A new account is created.');
+            }
+        }
+    }
+}
+
+

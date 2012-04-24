@@ -45,6 +45,7 @@ function ocs_admin_menu() {
     );
 
     // menu items for event
+    /*
     $items['ocs_admin/config/ocs/import'] = array(
         'title callback' => 'ocs_admin_import_title',
         'title arguments' => array('OCS'),
@@ -62,8 +63,10 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_import.inc',
     );
+    */
 
     // menu items for account management 
+    /*
     $items['ocs_admin/account/add'] = array(
         'title' => 'Add New Account',
         'page callback' => 'ocs_admin_account_add_page',
@@ -78,6 +81,7 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,
     );
+    */
 
     $items['ocs_admin/account/%/delete'] = array(
         'title' => 'Delete the Account',
@@ -244,6 +248,7 @@ function ocs_admin_menu() {
 
     // menu items for state transition
 
+    /*
     $items['ocs_admin/config/ocs/export/transition'] = array(
         'title' => 'Export State Transition Rules',
         'page callback' => 'drupal_get_form',
@@ -259,6 +264,7 @@ function ocs_admin_menu() {
         'access arguments' => array('access content'),
         'file' => 'ocs_export.inc',
     );
+    */
 
     // menu items for customer selection
     $items['ocs_admin/customer/select/%ctools_js/%/%/%'] = array(
