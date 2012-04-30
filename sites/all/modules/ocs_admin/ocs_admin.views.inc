@@ -51,6 +51,9 @@ function ocs_admin_views_data() {
 
     $ocs_card = ocs_admin_card();
     $data = array_merge( $data, $ocs_card);
+
+    $campaign = ocs_admin_table_campaign();
+    $data = array_merge( $data, $campaign);
 //  dpm( $data, 'view_data');
     return $data;
 }    
@@ -983,6 +986,42 @@ function ocs_admin_table_counter()
         ),
     );
 
+
+    return $data;
+	
+}
+
+function ocs_admin_table_campaign() 
+{
+    // ocs_counter
+    $data['ocs_campaign']['table']['name'] = 'ocsdata.ocs_campaign';
+    $data['ocs_campaign']['table']['group'] = t('OCS Campaign');
+    $data['ocs_campaign']['table']['base'] = array(
+        'field' => 'campaign_id',
+        'title' => t('OCS Campaign'),
+        'help' => t('List Campaigns'),
+        'database' => 'ocsdb',
+        'weight' => -10,
+    );
+
+    $data['ocs_campaign']['campaign_id'] = _get_numeric_field( array( 
+        'title'=> t('Campaign ID'), 
+        'help' => t('Campaign ID')));
+    $data['ocs_campaign']['campaign_name'] = _get_string_field( array( 
+        'title'=> t('Campaign Name'), 
+        'help' => t('Campaign Name')));
+    $data['ocs_campaign']['description'] = _get_string_field( array( 
+        'title'=> t('Campaign Description'), 
+        'help' => t('Campaign Description')));
+    $data['ocs_campaign']['status'] = _get_numeric_field( array( 
+        'title'=> t('Campaign Status'), 
+        'help' => t('Campaign Status')));
+    $data['ocs_campaign']['start_date'] = _get_datetime_field( array( 
+        'title'=> t('Campaign Start Date'), 
+        'help' => t('Campaign Start Date')));
+    $data['ocs_campaign']['end_date'] = _get_datetime_field( array( 
+        'title'=> t('Campaign End Date'), 
+        'help' => t('Campaign End Date')));
 
     return $data;
 	
