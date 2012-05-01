@@ -1,5 +1,15 @@
 <?php
 
+define( 'OCS_PARAM_TYPE_STRING', '1');
+define( 'OCS_PARAM_TYPE_INTEGER', '2');
+define( 'OCS_PARAM_TYPE_ENUM', '3');
+define( 'OCS_PARAM_TYPE_ACCOUNT_KEY', '4');
+define( 'OCS_PARAM_TYPE_GROUP_ID', '5');
+
+module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_action');
+module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_event');
+module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_cond');
+
 /*
 ** campaign list
 */
@@ -65,8 +75,13 @@ function ocs_admin_campaign_rule_form( $form, &$form_state, $campaign_id = NULL)
 {
   $form['#attached']['css'] = array(drupal_get_path('module', 'ocs_admin') . '/ocs_admin.css');
 
+  $form['#description'] = '<p>Edit Campaign Rules</p>';
+
+  //****************************
   // get all events
-  $event = ocs_admin_db_get_campaign_events( $campaign_id);
+  //****************************
+
+  $event = ocs_admin_campaign_events_load_all( $campaign_id);
 
   foreach( $event as $key => $item) {
     $records = array();
@@ -87,7 +102,7 @@ function ocs_admin_campaign_rule_form( $form, &$form_state, $campaign_id = NULL)
             '#title_display' => 'invisible',
             '#title' => t('Weight for @title', array('@title' => $node->title)),
       ),
-  );
+  	);
 
     $event[ $key] = array_merge( $event[$key], $info);
 
@@ -96,7 +111,11 @@ function ocs_admin_campaign_rule_form( $form, &$form_state, $campaign_id = NULL)
     $operations['delete'] = array( 
       '#type' => 'link',
       '#title' => t('delete'),
-      '#href' => 'ocs_admin/campaign/'. $item['campaign_id'] . '/event/'. $item['event_id'] . '/delete');
+      '#href' => t( 'ocs_admin/campaign/@campaign/event/@event/delete',
+		  array( '@campaign' => $item['campaign_id'],
+			  '@event' => $item['event_id'])),
+      '#options' => array( 'query' => array( 'event_name' => $node->title)),
+	  );
 
     $event[ $key]['operations'] = $operations;
   }
@@ -110,132 +129,115 @@ function ocs_admin_campaign_rule_form( $form, &$form_state, $campaign_id = NULL)
         array( '@rule' => url( 'ocs_admin/campaign/'. $campaign_id . '/rule/event'))
     );
 
-
+  //****************************
   // get all conditions
-  $cond = ocs_admin_db_get_campaign_conditions( $campaign_id);
-//  dpm( $cond, 'cond');
+  //****************************
+
+  $cond = ocs_admin_campaign_conditions_load_all( $campaign_id);
 
   $tree = ocs_admin_build_tree( $cond, array(
-    'title' => 'cond_name',
-    'plid' => 'parent_id',
-    'mlid' => 'my_id',
+	'title' => 'cond_name',
+	'plid' => 'parent_id',
+	'mlid' => 'cond_id',
   ));
 
-  $form['condition'] = _ocs_campaign_tree_form($tree);
-  $form['condition']['#caption'] = 'Conditions';
+  $form = array_merge( $form, _ocs_campaign_tree_form($tree));
+  $form['#caption'] = 'Conditions';
 
-  if ( ! element_children($form['condition'])) {
-    $form['condition']['#empty_text'] = t('There are no campaign rules yet. <a href="@link">Add Rules</a>.', 
-        array('@link' => url('ocs_admin/campaign/'. $campaign_id .'/add')));
+  if ( ! element_children($form)) {
+    $form['#empty_text'] = t('There are no campaign rules yet. <a href="@link">Add Conditions</a>.', 
+        array('@link' => url('ocs_admin/campaign/'. $campaign_id .'/cond/add')));
   }
 
   // add footer
-  $form['condition']['#footer'] = t('<ul class="action-links">'.
+  drupal_add_library( 'system', 'drupal.ajax');
+  $form['#footer'] = t('<ul class="action-links">'.
     '<li><a href="@rule">Add Condition</a></li>'.
-    '<li><a href="@and">Add AND</a></li>'.
-    '<li><a href="@or">Add OR</a></li>'.'</ul>',
-        array( '@rule' => url( 'ocs_admin/campaign/'. $campaign_id . '/add'),
-            '@and' => url( 'ocs_admin/campaign/'. $campaign_id . '/add/and'),
-            '@or' => url( 'ocs_admin/campaign/'. $campaign_id . '/add/or'))
+    '<li>!and</li>'.
+    '<li>!or</li>'.'</ul>',
+        array( '@rule' => url( 'ocs_admin/campaign/'. $campaign_id . '/cond/add'),
+            '!and' => l( t('Add AND'), 
+				t('ocs_admin/campaign/@campaign/rule/nojs/and/add', array( '@campaign' => $campaign_id)),
+				array( 'html' => TRUE, 'attributes' => array( 'class' => array( 'use-ajax')))),
+            '!or' => l( t('Add OR'), 
+				t('ocs_admin/campaign/@campaign/rule/nojs/or/add', array( '@campaign' => $campaign_id)),
+				array( 'html' => TRUE, 'attributes' => array( 'class' => array( 'use-ajax')))),
+			)
     );
 
+  //****************************
+  // submit buttons for condition tree
+  //****************************
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Save configuration'),
+    '#value' => t('Save Conditions'),
+    );
+
+  //****************************
+  // get all actions
+  //****************************
+
+  $actions = ocs_admin_campaign_actions_load_all( $campaign_id);
+  foreach( $actions as $key => $item) {
+    $records = array();
+    $node = node_load( $item['action_id']);
+    $client = taxonomy_term_load( $node->field_ocs_client_id['und'][0]['tid']);
+
+    $info = array(
+        'title' => $node->title,
+        'name' => $client->name,
+        'description' => t( '<em>%action</em> action provided by the system <em>%client</em>',
+            array( '%action' => $node->title, '%client' => $client->name)),
+        '#attributes' => array( 'class' => array('menu-enabled')),
+        'weight' => array(
+            '#type' => 'weight',
+            '#delta' => 50,
+//        '#default_value' => $item['weight'],
+            '#default_value' => 50,
+            '#title_display' => 'invisible',
+            '#title' => t('Weight for @title', array('@title' => $node->title)),
+      ),
+  	);
+
+    $actions[ $key] = array_merge( $actions[$key], $info);
+
+    // Build a list of operations
+    $operations = array();
+    $operations['edit'] = array( 
+      '#type' => 'link',
+      '#title' => t('edit'),
+      '#href' => t( 'ocs_admin/campaign/@campaign/action/@action/edit',
+		  array( '@campaign' => $item['campaign_id'],
+			  '@action' => $item['action_id'])),
+      '#options' => array( 'query' => array( 'action_name' => $node->title)),
+	  );
+
+    $operations['delete'] = array( 
+      '#type' => 'link',
+      '#title' => t('delete'),
+      '#href' => t( 'ocs_admin/campaign/@campaign/action/@action/delete',
+		  array( '@campaign' => $item['campaign_id'],
+			  '@action' => $item['action_id'])),
+      '#options' => array( 'query' => array( 'action_name' => $node->title)),
+	  );
+
+    $actions[ $key]['operations'] = $operations;
+  }
+  $form['action']['#records'] = $actions;
+  $form['action']['#caption'] = '<h3>Actions</h3>';
+  $form['action']['#empty_text'] = t('There are no actions yet.');
+
+  // add footer
+  $form['action']['#footer'] = t('<ul class="action-links">'.
+    '<li><a href="@rule">Add Action</a></li></ul>',
+        array( '@rule' => url( 'ocs_admin/campaign/'. $campaign_id . '/rule/action'))
     );
 
    return $form;
 }
 
-
-function ocs_admin_campaign_event_form( $form, &$form_state, $campaign_id)
-{
-    $items = entity_load('node', FALSE, array('type' => 'ocs_events'));
-    $options = array();
-    foreach( $items as $item) {
-        $client = taxonomy_term_load( $item->field_ocs_client_id['und'][0]['tid']);
-        dpm( $client, 'client');
-        $options[$client->name][$item->nid] = $item->title;
-    }
-
-    $form['body'] = array(
-        '#type' => 'markup',
-        '#markup' => t( 'Select the event to add.'),
-    );
-
-    $form['campaign_id'] = array(
-        '#type' => 'hidden',
-        '#value' => $campaign_id,
-    );
-
-    $form['event_id'] = array(
-        '#type' => 'select',
-        '#title' => t('React on event'),
-        '#options' => $options,
-        '#description' => t('Whenever the event occurs, rule evaluation is trigged'),
-    );
-
-    $form['actions'] = array('#type' => 'actions');
-    $form['actions']['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Save configuration'),
-    );
-
-    return $form;
-}
-
-function ocs_admin_campaign_event_form_submit( $form, &$form_state)
-{
-    dpm( $form_state['values'], 'form_state');
-    $event = $form_state['values'];
-
-    ocs_admin_campaign_event_save( $event);
-
-    $form_state['redirect'] = 'ocs_admin/campaign/' . $event['campaign_id'] .'/rule';
-}
-
-/*
-    get condition list
-*/
-function ocs_admin_db_get_campaign_events( $campaign_id)
-{
-    db_set_active('ocsdb');
-
-    // get group information
-    $query = db_select( 'ocs_campaign_events', 'c');
-    $result = $query->condition( 'c.campaign_id', $campaign_id, '=')
-        ->fields( 'c')
-        ->execute()
-        ->fetchAllAssoc( 'event_id', PDO::FETCH_ASSOC);
-    
-
-    db_set_active( 'default');
-
-    return $result;
-}
-
-/*
-    get condition list
-*/
-function ocs_admin_db_get_campaign_conditions( $campaign_id)
-{
-    db_set_active('ocsdb');
-
-    // get group information
-    $query = db_select( 'ocs_campaign_conditions', 'c');
-    $result = $query->condition( 'c.campaign_id', $campaign_id, '=')
-        ->fields( 'c')
-        ->execute()
-        ->fetchAllAssoc( 'my_id', PDO::FETCH_ASSOC);
-
-//    dpm( $result, 'result');
-
-    db_set_active( 'default');
-
-    return $result;
-}
 
 /**
  * Recursive helper function for ocs_group_form().
@@ -243,7 +245,10 @@ function ocs_admin_db_get_campaign_conditions( $campaign_id)
  * @param $tree
  *   The menu_tree retrieved by menu_tree_data.
  */
-function _ocs_campaign_tree_form($tree) {
+function _ocs_campaign_tree_form($tree) 
+{
+//	dpm( $tree, 'condition tree');
+
   $form = &drupal_static(__FUNCTION__, array('#tree' => TRUE));
   foreach ($tree as $data) {
     $title = '';
@@ -271,14 +276,40 @@ function _ocs_campaign_tree_form($tree) {
       );
       // Build a list of operations
       $operations = array();
-      $operations['edit'] = array( 
-        '#type' => 'link',
-        '#title' => t('edit'),
-        '#href' => 'ocs_admin/campaign/'. $item['mlid'] . '/edit');
-      $operations['delete'] = array( 
-        '#type' => 'link',
-        '#title' => t('delete'),
-        '#href' => 'ocs_admin/campaign/'. $item['mlid'] . '/delete');
+
+	  if ( $item['title'] == 'OR' || $item['title'] == 'AND') {
+		  $operations['edit'] = array(
+			'#type' => 'markup',
+			'#markup' => '',
+		  );
+		  $operations['delete'] = array(
+			'#type' => 'link',
+			'#title' => t('delete'),
+			'#href' => t( 'ocs_admin/campaign/@campaign/rule/nojs/@cond/delete',
+				array( '@campaign' => $data['db']['campaign_id'],
+					'@cond' => $item['mlid'])),
+			'#options' => array( 'html' => TRUE, 
+				'attributes' => array( 'class' => array( 'use-ajax'))),
+		  );
+	  }
+	  else {
+		  $operations['edit'] = array( 
+			'#type' => 'link',
+			'#title' => t('edit'),
+			'#href' => t( 'ocs_admin/campaign/@campaign/cond/@cond/edit',
+				array( '@campaign' => $data['db']['campaign_id'],
+					'@cond' => $item['mlid'])),
+			'#options' => array( 'query' => array( 'name' => $item['title'])),
+			);
+		  $operations['delete'] = array( 
+			'#type' => 'link',
+			'#title' => t('delete'),
+			'#href' => t( 'ocs_admin/campaign/@campaign/cond/@cond/delete',
+				array( '@campaign' => $data['db']['campaign_id'],
+					'@cond' => $item['mlid'])),
+			'#options' => array( 'query' => array( 'name' => $item['title'])),
+			);
+	  }
       $form[$mlid]['operations'] = $operations;  
     }
 
@@ -289,47 +320,74 @@ function _ocs_campaign_tree_form($tree) {
   return $form;
 }
 
+function ocs_admin_campaign_rule_form_validate( $form, &$form_state)
+{
+	if ( $form_state['values']['op'] != 'Cancel') {
+		dpm( $form_state['values'], 'form state');
+		$child_count = array();
+		foreach( element_children( $form) as $mlid) {
+			if ( isset( $form[$mlid]['#item'])) {
+				$element = $form[$mlid];
+				$plid =  'mlid:' . $element['plid']['#value'];
+				if ( $element['plid']['#value'] != 0) $child_count[$plid][] = $mlid;
+				if ( ! isset($child_count[$mlid])) $child_count[$mlid] = array();
+				dsm( $element['#item']['title'] . ': ' .$plid . '->' . $mlid . '  '. $element['plid']['#default_value']);
+			}
+		}
+
+		dpm( $child_count, 'child count');
+		foreach( $child_count as $mlid => $child) {
+			$element = $form[$mlid]['#item'];
+			if ( $element['title'] == 'AND' || $element['title'] == 'OR') {
+				if ( count( $child) < 2) {
+					form_set_error( $mlid, t( 'Invalid @op condition. More than 2 operands are required.', array( '@op' => $element['title'])));
+				}
+			}
+			else {
+				if ( count( $child) != 0) {
+					form_set_error( $mlid, t( 'Invalid condition: "@op". No operands are allowed.', array( '@op' => $element['title'])));
+				}
+			}
+		}
+	}
+}
+
+
 function ocs_admin_campaign_rule_form_submit( $form, &$form_state)
 {
-//    dpm( $form_state, 'form_state');
+	if ( $form_state['values']['op'] != 'Cancel') {
+		dpm( $form_state, 'form_state submit');
 
-    $order = array_flip( array_keys( $form_state['input']));
-    $form = array_merge( $order, $form);
+		$order = array_flip( array_keys( $form_state['input']));
+		dpm( $order, 'order');
 
-//    dpm( $order, 'order');
- //   dpm( $form, 'form');
+		$form = array_merge( $order, $form);
 
-    $updated_items = array();
-    $fields = array( 'plid' => 'parent_group_id');
+		$updated_items = array();
+		$fields = array( 'plid' => 'parent_id');
 
-    foreach( element_children( $form) as $mlid) {
-        if ( isset( $form[$mlid]['#item'])) {
-            $element = $form[$mlid];
-            // update any fields that have changed in this menu item.
-            foreach( $fields as $field => $db_field) {
-                if ( $element[$field]['#value'] != $element[$field]['#default_value']) {
-                    $element['#item']['db'][$db_field] = $element[$field]['#value'];
-                    $updated_items[$mlid] = $element['#item'];
-//                    dpm( $updated_items[$mlid], 'updated');
-                }
-            }
-            // hidden is a special case, the value needs to be reserved
-            /*
-            if ( $element['hidden']['#value'] != $element['hidden']['#default_value']) {
-                // convert to integer rather than boolean due to PDO cast to string
-                $element['#item']['hidden'] = $element['hidden']['#value'] ? 0 : 1;
-                $updated_items[$mlid] = $element['#item'];
-                dpm( $updated_items[$mlid], 'updated hidden');
-            }
-            */
-        }
-    }
+		foreach( element_children( $form) as $mlid) {
+			if ( isset( $form[$mlid]['#item'])) {
+				$element = $form[$mlid];
+				// update any fields that have changed in this menu item.
+				//dpm( $element['#item']['db'], 'element');
+				foreach( $fields as $field => $db_field) {
+					if ( $element[$field]['#value'] != $element[$field]['#default_value']) {
+						$element['#item']['db'][$db_field] = $element[$field]['#value'];
+						$updated_items[$mlid] = $element['#item'];
+					}
+				}
+			}
+		}
 
-    foreach( $updated_items as $item) {
-        ocs_admin_group_save( $item['db']);
-    }
+		dpm( $updated_items, 'updated');
 
-    drupal_set_message( t('Your configuration has been saved.'));
+		foreach( $updated_items as $item) {
+			ocs_admin_campaign_condition_save( $item['db']);
+		}
+
+		drupal_set_message( t('Your configuration has been saved.'));
+	}
 }
 
 /**
@@ -370,7 +428,9 @@ function theme_ocs_admin_campaign_rule_form($variables)
 
     // event table
     $output = ocs_admin_table_theme( $form['event'], $header);
-    $output .= ocs_admin_tree_table_theme( $form['condition'], $header);
+    $output .= '<br><div id="ocs_admin_campaign_cond_div">'. 
+		ocs_admin_tree_table_theme( $form, $header) . '</div>' ;
+    $output .= ocs_admin_table_theme( $form['action'], $header);
 
     return $output;
 }
@@ -390,9 +450,9 @@ function ocs_admin_campaign_rule_edit_form( $form, &$form_state, $type, $campaig
         '#value' => $campaign_id,
     );
 
-    $form['my_id'] = array(
+    $form['cond_id'] = array(
         '#type' => 'hidden',
-        '#value' => isset( $campaign) ? $campaign['my_id'] : 0,
+        '#value' => isset( $campaign) ? $campaign['cond_id'] : 0,
     );
 
     $form['parent_id'] = array(
@@ -426,5 +486,177 @@ function ocs_admin_campaign_rule_edit_form_submit( $form, &$form_state)
 
     $form_state['redirect'] = 'ocs_admin/campaign/' . $campaign['campaign_id'];
 }
+
+
+/*
+** Add/Edit campaign properties
+*/
+function ocs_admin_campaign_edit_form( $form, &$form_state, $op, $campaign_id = NULL)
+{
+	$campaign = ocs_admin_campaign_load( $campaign_id);
+
+    $form['campaign_id'] = array(
+        '#type' => 'hidden',
+        '#value' => $campaign_id,
+    );
+
+    $form['campaign_name'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Name',
+        '#default_value' => $campaign['campaign_name'],
+    );
+
+    $form['description'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Description',
+        '#default_value' => $campaign['description'],
+    );
+
+    $form['status'] = array(
+        '#type' => 'select',
+        '#title' => 'Status',
+        '#options' => array(
+			'0' => 'Disabled',
+			'1' => 'Enabled',
+			),
+        '#default_value' => $campaign['status'],
+    );
+
+	$date_str = isset($campaign['start_date']) ? $campaign['start_date'] : date( 'Y-m-d', time());
+	dpm( $date_str, 'date str');
+	$form['start_date'] = array(
+		'#type' => 'date',
+		'#title' => 'Start Date',
+		'#default_value' => date_parse( $date_str),
+	);
+
+	$date_str = isset($campaign['end_date']) ? $campaign['end_date'] : date( 'Y-m-d', time());
+	$form['end_date'] = array(
+		'#type' => 'date',
+		'#title' => 'End Date',
+		'#default_value' => date_parse( $date_str),
+	);
+
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    return $form;
+}
+
+
+function ocs_admin_campaign_edit_form_validate( $form, &$form_state)
+{
+	if ( $form_state['values']['op'] != 'Cancel') {
+		// check start & end date
+	}
+}
+
+
+function ocs_admin_campaign_edit_form_submit( $form, &$form_state)
+{
+    $values = $form_state['values'];
+	if ( $values['op'] != 'Cancel') {
+		$values['start_date'] = sprintf( '%04d-%02d-%02d', $values['start_date']['year'] , 
+				$values['start_date']['month'] , $values['start_date']['day']);
+		$values['end_date'] = sprintf( '%04d-%02d-%02d', $values['end_date']['year'] , 
+				$values['end_date']['month'] , $values['end_date']['day']);
+
+		ocs_admin_campaign_save($values);
+
+		drupal_set_message( t('Your configuration has been saved.'));
+
+		$form_state['redirect'] = 'ocs_admin/campaign/' . $values['campaign_id'];
+
+	}
+}
+
+
+function ocs_admin_campaign_load( $campaign_id)
+{
+    db_set_active('ocsdb');
+
+    // get group information
+    $query = db_select( 'ocs_campaign', 'c');
+    $result = $query->condition( 'c.campaign_id', $campaign_id, '=')
+        ->fields( 'c')
+        ->execute()
+        ->fetchAssoc( 'event_id', PDO::FETCH_ASSOC);
+    
+    db_set_active( 'default');
+
+    return $result;
+}
+
+function ocs_admin_campaign_save( $campaign)
+{
+    db_set_active('ocsdb');
+
+	$data = array();
+	foreach( array( 'campaign_name', 'description', 'status', 'start_date', 'end_date') as $key) {
+		$data[ $key] = $campaign[ $key];
+	}
+
+	$result = db_merge( 'ocs_campaign')
+		->key( array( 'campaign_id' => $campaign['campaign_id']))
+		->fields( $data)
+		->execute();
+
+    db_set_active( 'default');
+
+    return $result;
+}
+
+
+/*
+** delete campaign
+*/
+function ocs_admin_campaign_delete_form( $form, &$form_state, $campaign_id)
+{
+	$campaign = ocs_admin_campaign_load( $campaign_id);
+
+    $form['#campaign'] = $campaign;
+
+    $caption = '<p>'. t('This action cannot be undone...') . '</p>';
+
+    return confirm_form( $form, t('Are you sure to delete the campaign "@name"?', 
+				array( '@name' => $campaign['campaign_name'])),
+			'ocs_admin/campaign/list', $caption, t('Delete'));
+}
+
+function ocs_admin_campaign_delete_form_submit( $form, &$form_state)
+{
+    $campaign = $form['#campaign'];
+
+	ocs_admin_campaign_delete( $campaign['campaign_id']);
+
+    $t_args = array( '%name' => $campaign['campaign_name']);
+    drupal_set_message( t('The campaign %name has been deleted.', $t_args));
+    watchdog( 'ocs_admin', 'Deleted campaign %name.', $t_args, WATCHDOG_NOTICE);
+
+	$form_state['redirect'] = 'ocs_admin/campaign/list';
+}
+
+function ocs_admin_campaign_delete( $campaign_id)
+{
+    db_set_active( 'ocsdb');
+
+    // delete the group and all subgroups
+    $status = db_delete( 'ocs_campaign')
+        ->condition( 'campaign_id', $campaign_id)
+        ->execute();
+    dpm( $status, 'db_delete result');
+
+    db_set_active( 'default');
+}
+
+
 
 
