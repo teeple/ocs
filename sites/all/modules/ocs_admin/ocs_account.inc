@@ -12,6 +12,7 @@
 function ocs_admin_account_add_page( $impl = NULL, $arg = NULL, $init = TRUE) 
 {
     $impl = '_wizard';
+
     if ( ! isset($_SESSION['ocs_admin_account_add'])) {
         $_SESSION['ocs_admin_account_add'] = array();
     }
@@ -45,13 +46,10 @@ function ocs_admin_account_select_row( $args)
 */
 function ocs_account_select( $impl, $js = NULL, $type = 'customer', $id = NULL, $name = NULL)
 {
-    
-    dpm( $impl, 'ocs_account_select');
-    
     $arg = array( 
         $type . '_id' => $id, 
         $type . '_name' => $name,
-        ); 
+    ); 
 
     $output = ocs_admin_account_add_page( $impl, $arg);
 
@@ -328,7 +326,7 @@ function ocs_admin_account_add_form_wizard( $form, &$form_state, $arg = NULL)
         '#type' => 'textfield',
         '#title' => t('Product ID'),
         '#size' => '30',
-     );
+    );
 
     $form['section']['product']['product_name'] = array(
         '#type' => 'textfield',
@@ -357,7 +355,7 @@ function ocs_admin_account_add_form_wizard( $form, &$form_state, $arg = NULL)
         '#type' => 'textfield',
         '#title' => t('Account Key'),
         '#size' => '30',
-     );
+    );
 
     $form['section']['account']['account_key_name'] = array(
         '#type' => 'select',
@@ -809,18 +807,6 @@ function ocs_admin_account_delete_confirm( $form, &$form_state, $account_key)
         $caption, t('Delete'));
 }
 
-function ocs_admin_account_delete_confirm_submit( $form, &$form_state)
-{
-    $account_key = $form['#account_key'];
-    ocs_admin_account_delete( $account_key);
-
-    $t_args = array( '%key' => $account_key);
-    drupal_set_message( t('The account %key has been deleted.', $t_args));
-    watchdog( 'ocs_admin', 'Deleted the account %key.', $t_args, WATCHDOG_NOTICE);
-
-    $form_state['redirect'] = 'ocs_admin/account';
-}
-
 function ocs_admin_account_edit_form( $form, &$form_state, $account_key)
 {
     $form['account_key_markup'] = array(
@@ -1059,6 +1045,22 @@ function _ocs_admin_account_key_save( $account_key, $fields)
     dpm( $result, 'db_update ocs_account_key result');
 }
 
+function ocs_admin_account_delete_confirm_submit( $form, &$form_state)
+{
+    $account_key = $form['#account_key'];
+    $group_id = ocs_admin_account_delete($account_key);
+
+    if (is_null($group_id)) {
+        $t_args = array( '%key' => $account_key);
+        drupal_set_message( t('The account %key has been deleted.', $t_args));
+        watchdog( 'ocs_admin', 'Deleted the account %key.', $t_args, WATCHDOG_NOTICE);
+
+        $form_state['redirect'] = 'ocs_admin/account';
+    } else {  
+        $form_state['redirect'] = 'ocs_admin/group/' . $group_id . '/edit';
+    }
+}
+
 /*
     delete account
 */
@@ -1066,33 +1068,52 @@ function ocs_admin_account_delete( $account_key)
 {
     db_set_active( 'ocsdb');
 
-    $txn = db_transaction();
+    // check the group master number
+    $result = db_select('ocs_group', 'g')
+        ->fields('g', array('group_id'))
+        ->condition('master_number', $account_key, '=')
+        ->execute()
+        ->fetchAssoc();
+        
+    if (is_null($result['group_id'])) {
+        // delete group member
+        $txn = db_transaction();
 
-    try {
-        // delete ocs_account
-        $result = db_delete( 'ocs_account')
-            ->condition( 'account_key', $account_key, '=')
-            ->execute();
-        dpm( $result, 'ocs_account result');
+        try {
+            // delete ocs_account
+            $result = db_delete( 'ocs_account')
+                ->condition( 'account_key', $account_key, '=')
+                ->execute();
+            dpm( $result, 'ocs_account result');
 
-        $result = db_delete( 'ocs_subscription')
-            ->condition( 'subscription_key', $account_key, '=')
-            ->execute();
-        dpm( $result, 'ocs_subscription result');
+            $result = db_delete( 'ocs_subscription')
+                ->condition( 'subscription_key', $account_key, '=')
+                ->execute();
+            dpm( $result, 'ocs_subscription result');
 
-        // set account_key as unused
-        $result = _ocs_admin_account_key_save( $account_key, array(
-                'sales_flag' => '0',
+            // set account_key as unused
+            $result = _ocs_admin_account_key_save( $account_key, array(
+                                                   'sales_flag' => '0',
             ));
+            // delete group member
+            $result = db_delete('ocs_group_member')
+                ->condition('account_key', $account_key, '=')
+                ->execute();
+        } 
+            catch( Exception $e) {
+                $txn->rollback();
 
-    } 
-    catch( Exception $e) {
-        $txn->rollback();
-
-        watchdog_exception( 'ocs_admin', $e);
+            watchdog_exception( 'ocs_admin', $e);
+        }
+    } else {
+        drupal_set_message( t('You have to change master number[group id:%group_id].', 
+                            array('%group_id' => $result['group_id'])));   
     }
-
+    
     db_set_active( 'default');
+    
+    return $result['group_id'];
+
 }
 
 /*
@@ -1151,6 +1172,3 @@ function ocs_admin_account_key_load( $account_key)
 
     return $result;
 }
-
-
-

@@ -53,22 +53,38 @@ function theme_ocs_admin_group_overview( $variables)
 */
 function ocs_admin_group_edit_form( $form, &$form_state, $type, $groupid = NULL)
 {
-    $form['group_id'] = array(
+    $form = array();
+    
+    $form['section'] = array(
+        '#type' => 'fieldset',
+        '#description' => 'Input or select parameters to create an group.',
+    );
+    
+    $form['section']['group'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Group'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Search</em> button to find a account.',
+        '#attributes' => array( 'class' => array( 'column')),
+    );
+
+    $form['section']['group']['group_id'] = array(
         '#type' => 'hidden',
         '#value' => NULL,
     );
 
-    $form['parent_group_id'] = array(
+    $form['section']['group']['parent_group_id'] = array(
         '#type' => 'hidden',
         '#value' => 0,
     );
 
-    $form['ancestor_group_id'] = array(
+    $form['section']['group']['ancestor_group_id'] = array(
         '#type' => 'hidden',
         '#value' => 0,
     );
 
-    $form['group_name'] = array(
+    $form['section']['group']['group_name'] = array(
         '#type' => 'textfield',
         '#title' => 'Name',
         '#description' => t('Enter Group Name'),
@@ -76,14 +92,19 @@ function ocs_admin_group_edit_form( $form, &$form_state, $type, $groupid = NULL)
         '#size' => 30,
     );
 
-    $form['master_number'] = array(
+    $form['section']['group']['master_number'] = array(
         '#type' => 'textfield',
         '#title' => 'Master Number',
-        '#description' => t('Enter Master number to be used'),
+        '#description' => t('Enter or select a master number to be used'),
         '#maxlength' => 24,
         '#size' => 30,
     );
-
+    
+    $form['section']['group']['account_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Account',
+    );
+    
     $form['actions'] = array('#type' => 'actions');
     $form['actions']['submit'] = array(
         '#type' => 'submit',
@@ -98,29 +119,43 @@ function ocs_admin_group_edit_form( $form, &$form_state, $type, $groupid = NULL)
     if ( isset( $groupid)) {
         dpm( $groupid, 'group id');
         $group = group_load( $groupid);
-        $form['group_id']['#value'] = $group['group_id'];
-        $form['ancestor_group_id']['#value'] = $group['ancestor_group_id'];
-        $form['parent_group_id']['#value'] = $group['parent_group_id'];
-        $form['group_name']['#default_value'] = $group['group_name'];
-        $form['master_number']['#default_value'] = $group['master_number'];
+        $form['section']['group']['group_id']['#value'] = $group['group_id'];
+        $form['section']['group']['ancestor_group_id']['#value'] = $group['ancestor_group_id'];
+        $form['section']['group']['parent_group_id']['#value'] = $group['parent_group_id'];
+        $form['section']['group']['group_name']['#default_value'] = $group['group_name'];
+        $form['section']['group']['master_number']['#default_value'] = $group['master_number'];
     }
-
-
+    
     return $form;
 }
 
 function ocs_admin_group_edit_form_validate($form, &$form_state)
 {
-    $group = $form_state['values'];
+    $master_number = $form_state['values']['master_number'];
 
+    // check master number another group 
+    $group_id = ocs_admin_master_number_load($master_number);
+
+    if (!is_null($group_id)) {
+        form_set_error( 'master number', 
+                        'Master number already exsits another group [group id:'.$group_id.']');
+    }
 }
 
 function ocs_admin_group_edit_form_submit( $form, &$form_state)
 {
     $group = $form_state['values'];
-
-    if ( $form_state['values']['op'] == 'Save') {
+	  
+    if ( $form_state['values']['op'] == 'Search Account') {
+        $query = array(
+            'account_key' => $form_state['values']['master_number'],
+        );
+        drupal_goto( 'ocs_admin/account/master/select', array( 'query' => $query));
+    }
+    else if ( $form_state['values']['op'] == 'Save') {
         dpm( $group, 'submit group');
+        // check the master number other group
+        
         ocs_admin_group_save($group);
 
         drupal_set_message( t('Your configuration has been saved.'));
@@ -130,6 +165,32 @@ function ocs_admin_group_edit_form_submit( $form, &$form_state)
         else    // subgroup
             $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'] . '/subgroup';
     }
+}
+
+function ocs_admin_group_name_load($group_name)
+{
+    db_set_active('ocsdb');
+
+    $result = db_select('ocs_group', 'g')
+        ->fields('g', array('group_name'))
+        ->condition('group_name', $group_name, '=')
+        ->execute()
+        ->fetchAssoc();
+
+    return $result['group_name'];
+}
+
+function ocs_admin_master_number_load($master_number)
+{
+    db_set_active('ocsdb');
+
+    $result = db_select('ocs_group', 'g')
+        ->fields('g', array('ancestor_group_id'))
+        ->condition('master_number', $master_number, '=')
+        ->execute()
+        ->fetchAssoc();
+
+    return $result['ancestor_group_id'];
 }
 
 /*
@@ -186,7 +247,14 @@ function ocs_admin_subgroup_add_form( $form, &$form_state, $groupid)
 
 function ocs_admin_subgroup_add_form_submit( $form, &$form_state)
 {
-    if ( $form_state['values']['op'] != 'Cancel') {
+dpm($form, 'form');
+    if ( $form_state['values']['op'] == 'Search Account') {
+        $query = array(
+            'account_key' => $values['master_number'],
+        );
+        drupal_goto( 'ocs_admin/account/master/select', array( 'query' => $query));
+    }
+    else if ( $form_state['values']['op'] != 'Cancel') {
         $group = $form_state['values'];
         dpm( $group, 'submit subgroup');
         ocs_admin_group_save($group);
@@ -533,7 +601,6 @@ function theme_ocs_admin_group_form($variables, $header = NULL)
 
 function ocs_admin_tree_table_theme( $form, $header)
 {
-
   drupal_add_tabledrag('menu-overview', 'match', 'parent', 'menu-plid', 'menu-plid', 'menu-mlid', TRUE, MENU_MAX_DEPTH - 1);
   drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
 
@@ -819,7 +886,6 @@ function ocs_member_select( $groupid, $js = NULL)
     }
 }
 
-
 /*
 ** edit group information form
 */
@@ -933,6 +999,8 @@ function ocs_admin_group_save( $group)
         'parent_group_id' => isset($group['parent_group_id']) ? $group['parent_group_id'] : 0,
         'group_name' => isset($group['group_name']) ? $group['group_name'] : NULL,
         'service_type' => isset($group['service_type']) ? $group['service_type'] : 0,
+        'group_type' => isset($group['group_type']) ? $group['group_type'] : 0,
+        'member_count' => isset($group['member_count']) ? $group['member_count'] : 0,
         );
     if ( isset( $group['master_number']))
         $fields['master_number'] = $group['master_number'];
@@ -1048,6 +1116,27 @@ function ocs_admin_member_load( $account_key)
 
     return $member;
 }
+
+/*
+    load account keyr info
+*/
+function ocs_admin_account_load( $master_number)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_account', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'account_key', $master_number, '=')
+        ->condition( 'status', '1', '=')
+        ->execute();
+
+    $member = $result->fetchAssoc();
+
+    db_set_active('default');
+
+    return $member;
+}
+
 
 /*
     load member info
@@ -1208,6 +1297,7 @@ function ocs_admin_change_subgroup_js( $form, $form_state)
  */
 function theme_ocs_admin_member_list( $variables)
 {
+    dsm('member_list');
     drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
     $form = $variables['form'];
 //    dpm( $form, 'theme');
@@ -1363,6 +1453,192 @@ function group_load_all()
     } 
 
     return $groups;
+}
+
+/*
+**  ajax select button in ocs_group table
+*/
+function ocs_admin_group_select($impl, $js=NULL, $type='group', $id=NULL)
+{
+    dsm('ocs_admin_group_select');
+    
+    $arg = array(
+        $type . '_id' => $id,
+    );
+    
+    $output = ocs_admin_group_add_page($impl, $arg);
+
+    if ($js) {
+        ctools_include('ajax');
+        $commands = array();
+        $commands[] = ajax_command_replace('#ocs_admin_group_page_div', $output);
+        print ajax_render($commands);
+        exit;
+    }
+    else {
+        return $output;
+    }
+}
+
+function ocs_admin_group_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
+{
+    $impl = '_wizard';
+    if (! isset($_SESSION['ocs_admin_group_save'])) {
+        $_SESSION['ocs_admin_group_save'] = array();
+    }
+    $_SESSION['ocs_admin_group_save'] = array_merge($_SESSION['ocs_admin_group_save'], $_GET);
+    
+    $form = drupal_get_form('ocs_admin_group_add_page'.$impl, $_SESSION['ocs_admin_group_save']);
+    $output = '<div id="ocs_admin_group_page_div">' . drupal_render( $form) . '</div>';
+    
+    return $output;
+}
+
+function ocs_admin_group_add_page_wizard( $form, &$form_state, $arg = NULL)
+{
+    $form = array();
+    $form['section'] = array(
+        '#type' => 'fieldset',
+        '#description' => 'Input or select parameters to create an group.',
+    );
+
+    $form['section']['group'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Group'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#description' => 'Click the <em>Search</em> button to find a account.',
+        '#attributes' => array( 'class' => array( 'column')),
+    );
+
+    $form['section']['group']['group_id'] = array(
+        '#type' => 'hidden',
+        '#value' => NULL,
+    );
+    
+    $form['section']['group']['group_type'] = array(
+        '#type' => 'hidden',
+        '#value' => NULL,
+        '#default_value' => 0,
+    );
+ 
+    $form['section']['group']['member_count'] = array(
+        '#type' => 'hidden',
+        '#value' => NULL,
+        '#default_value' => 0,
+    );
+
+    $form['section']['group']['parent_group_id'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+    );
+
+    $form['section']['group']['ancestor_group_id'] = array(
+        '#type' => 'hidden',
+        '#value' => 0,
+    );
+
+    $form['section']['group']['group_name'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Name',
+        '#description' => t('Enter Group Name'),
+        '#maxlength' => 64,
+        '#size' => 30,
+        '#required' => TRUE,
+    );
+
+    $form['section']['group']['master_number'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Master Number',
+        '#description' => t('Enter or select a master number to be used'),
+        '#maxlength' => 24,
+        '#size' => 30,
+    );
+
+    $form['section']['group']['account_search'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search Account',
+    );
+    
+    $form['actions'] = array('#type' => 'actions');
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+
+    $form['actions']['cancel'] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+    );
+
+    if ( isset($arg['group_id'])) {
+        $group = group_load( $arg['group_id']);
+        $form['section']['group']['group_id']['#value'] = $group['group_id'];
+        $form['section']['group']['ancestor_group_id']['#value'] = $group['ancestor_group_id'];
+        $form['section']['group']['parent_group_id']['#value'] = $group['parent_group_id'];
+        $form['section']['group']['group_name']['#default_value'] = $group['group_name'];
+        $form['section']['group']['master_number']['#default_value'] = $group['master_number'];
+    } else if (isset($arg['account_key']) && ($_SESSION['form_mode'] != 'I')) {
+        $form['section']['group']['group_name']['#default_value'] = $_SESSION['group_name'];
+        $form['section']['group']['master_number']['#default_value'] = $arg['account_key'];
+        $_SESSION['group_name'] = NULL;
+        $_SESSION['form_mode'] = 'I';
+    }
+    
+    return $form;
+}
+
+function ocs_admin_group_add_page_wizard_submit( $form, &$form_state)
+{
+    $group = $form_state['values'];
+    
+    if ( $form_state['values']['op'] == 'Search Account') {
+        $_SESSION['form_mode'] = 'M';
+        $_SESSION['group_name'] = $group['group_name'];
+        $query = array(
+            'account_key' => $form_state['values']['master_number'],
+        );
+
+        drupal_goto( 'ocs_admin/account/master/select', array( 'query' => $query));
+    }
+    else if ( $form_state['values']['op'] == 'Save') {
+        // check the master number other group
+        
+        ocs_admin_group_save($group);
+
+        drupal_set_message( t('Your configuration has been saved.'));
+        $_SESSION['form_mode'] = 'I';
+        if ( $group['parent_group_id'] == 0)
+            $form_state['redirect'] = 'ocs_admin/group';    // master group
+        else    // subgroup
+            $form_state['redirect'] = 'ocs_admin/group/' . $group['ancestor_group_id'] . '/subgroup';
+    }
+}
+
+function ocs_admin_group_add_page_wizard_validate($form, &$form_state)
+{
+    if ($form_state['values']['op'] == 'Save') {  
+        $master_number = $form_state['values']['master_number'];
+   
+        // check master number another group 
+        $group_id = ocs_admin_master_number_load($master_number);
+        if (!is_null($group_id)) {
+            form_set_error( 'master number', 
+                            'Master number already exsits another group [group id:'.$group_id.']');
+        }
+
+        $account_key = ocs_admin_account_load($master_number);
+        dpm($account_key, 'account_key');
+        if (is_null($account_key['account_key'])) {
+            form_set_error( 'master number', 'Invalid master number');
+        }
+
+        $group_name = ocs_admin_group_name_load($form_state['values']['group_name']);
+        dpm($group_name, 'group_name');
+        if ($group_name == $form_state['values']['group_name']){
+            form_set_error( 'group_name', 'Already exists group name');    
+        }
+    }
 }
 
 

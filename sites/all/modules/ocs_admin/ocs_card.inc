@@ -171,6 +171,7 @@ function ocs_admin_card_form_product_card_edit( $form, &$form_state, $type, $pro
 
 function ocs_admin_card_form_add_panel( $form, &$form_state, $arg=NULL)
 {
+    dpm($arg, 'add_panel');
     $from = array();
     $form['product_card'] = array(
         '#type' => 'fieldset',
@@ -261,13 +262,12 @@ function  ocs_admin_card_form_select_row($args)
 
 function ocs_cardtype_select($impl, $js=NULL, $type='card', $id=NULL, $name=NULL)
 {
-    dsm('ocs_cardtype_select');
     $arg = array(
         $type . '_type' => $id,
         $type . '_description' => $name,
         );
     
-    $output = ocs_admin_card_form_add_page($impl, $arg);
+    $output = ocs_admin_card_pct_add_page($impl, $arg);
     
     if ($js) {
         ctools_include('ajax');
@@ -283,7 +283,6 @@ function ocs_cardtype_select($impl, $js=NULL, $type='card', $id=NULL, $name=NULL
 
 function ocs_product_select($impl, $js=NULL, $type='product', $id=NULL, $name=NULL)
 {
-    dsm('ocs_product_select');
     $arg = array(
         $type . '_id' => $id,
         $type . '_name' => $name,
@@ -305,12 +304,10 @@ function ocs_product_select($impl, $js=NULL, $type='product', $id=NULL, $name=NU
 
 function ocs_productcard_select($impl, $js=NULL, $type='productcard', $id=NULL, $name=NULL)
 {
-    dsm('ocs_product_select');
     $arg = array(
         $type . '_id' => $id,
         $type . '_name' => $name,
         );
-    dpm($arg, 'arg');
     $output = ocs_admin_card_form_add_page($impl, $arg);
 
     if ($js) {
@@ -382,6 +379,7 @@ function ocs_admin_productcard_save($cardtype)
 
 function ocs_admin_productcard_wizard( $form, &$form_state, $arg = NULL)
 {
+    dpm($arg, 'ocs_admin_productcard_wizard');
     /* Card Type */
     $form = array();
     $form['section'] = array(
@@ -442,7 +440,17 @@ function ocs_admin_productcard_wizard( $form, &$form_state, $arg = NULL)
         '#type' => 'submit',
         '#value' => 'Search Card Type',
     );
-   
+ 
+    $form['section']['usable'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Usable'),
+//        '#collapsible'=> TRUE,
+//        '#collapsed' => FALSE,
+        '#description' => 'Select the <em>Usable</em> e.',
+        '#attributes' => array('class' => array('column')),
+  );
+
+  
     if ($arg) {
         $form['section']['cardtype']['card_type']['#default_value'] = $arg['card_type'];    
         $form['section']['cardtype']['description']['#default_value'] = $arg['description'];    

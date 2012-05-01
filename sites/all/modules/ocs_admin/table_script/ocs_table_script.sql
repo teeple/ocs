@@ -292,6 +292,8 @@ DROP TABLE IF EXISTS `ocsdata`.`ocs_group` ;
 
 CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_group` (
   `group_id` INTEGER NOT NULL AUTO_INCREMENT ,
+  `group_type` INTEGER DEFAULT 0 COMMENT '0:VPN, 1:Family, 2:Couple',
+  `group_count` INTEGER DEFAULT 0 COMMENT '0:Unlimited',
   `parent_group_id` INTEGER NOT NULL ,
   `service_type` INTEGER NOT NULL ,
   `master_number` VARCHAR(24) NOT NULL ,
@@ -328,7 +330,7 @@ DROP TABLE IF EXISTS `ocsdata`.`ocs_product_card` ;
 CREATE  TABLE IF NOT EXISTS `ocsdata`.`ocs_product_card` (
   `card_type` VARCHAR(4) NOT NULL COMMENT '카드 유형' ,
   `product_id` VARCHAR(45) NOT NULL COMMENT '상품 코드' ,
-  `usable` TINYINT(1) NULL DEFAULT '0' COMMENT '사용가능 여부(0:not usd, 1:use)' ,
+  `usable` INTEGER NULL DEFAULT '0' COMMENT '1:Usable ',
   PRIMARY KEY (`card_type`, `product_id`) )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
