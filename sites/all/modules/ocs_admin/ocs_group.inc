@@ -117,7 +117,6 @@ function ocs_admin_group_edit_form( $form, &$form_state, $type, $groupid = NULL)
     );
 
     if ( isset( $groupid)) {
-        dpm( $groupid, 'group id');
         $group = group_load( $groupid);
         $form['section']['group']['group_id']['#value'] = $group['group_id'];
         $form['section']['group']['ancestor_group_id']['#value'] = $group['ancestor_group_id'];
@@ -150,6 +149,7 @@ function ocs_admin_group_edit_form_submit( $form, &$form_state)
         $query = array(
             'account_key' => $form_state['values']['master_number'],
         );
+        
         drupal_goto( 'ocs_admin/account/master/select', array( 'query' => $query));
     }
     else if ( $form_state['values']['op'] == 'Save') {
@@ -223,6 +223,7 @@ function ocs_admin_subgroup_add_form( $form, &$form_state, $groupid)
         '#type' => 'textfield',
         '#title' => 'Name',
         '#default_value' => $group['group_name'],
+        '#required' => TRUE,
     );
 
     $form['master_number'] = array(
@@ -290,6 +291,7 @@ function ocs_admin_db_get_group( $groupid)
 */
 function ocs_admin_subgroup_load( $groupid)
 {
+    dpm($groupid, 'groupid');
     db_set_active('ocsdb');
 
     // get group information
@@ -345,7 +347,8 @@ function ocs_admin_group_form( $form, &$form_state, $groupid)
   $tree = ocs_admin_build_tree( $subgroups, array( 
     'title' => 'group_name',
     'plid' => 'parent_group_id', 
-    'mlid' => 'group_id'), -1);
+    'mlid' => 'group_id',
+    'master_number' => 'master_number'), -1);
 
 //  dpm( $subgroups, 'subgroup');
   $tree = ocs_admin_get_sub_tree( array_shift( $tree));
@@ -401,7 +404,7 @@ function _ocs_group_tree_form($tree) {
       $mlid = 'mlid:' . $item['mlid'];
       $form[$mlid]['#item'] = $item;
       $form[$mlid]['#attributes'] = array( 'class' => array('menu-enabled'));
-      $form[$mlid]['title']['#markup'] = $item['title'];
+      $form[$mlid]['title']['#markup'] = $item['title']. ' ['.$item['db']['master_number'].']';
       $form[$mlid]['weight'] = array(
         '#type' => 'weight',
         '#delta' => 50,
@@ -410,7 +413,8 @@ function _ocs_group_tree_form($tree) {
         '#title_display' => 'invisible',
         '#title' => t('Weight for @title', array('@title' => $item['title'])),
       );
-       $form[$mlid]['mlid'] = array(
+      
+      $form[$mlid]['mlid'] = array(
         '#type' => 'hidden',
         '#value' => $item['mlid'],
       );
@@ -1274,6 +1278,28 @@ function group_load_all()
     return $groups;
 }
 
+function ancestor_load($groupid)
+{
+   $groups = &drupal_static(__FUNCTION__);
+   if ( !isset( $groups)) {
+       db_set_active('ocsdb');
+
+       $subquery = db_select('ocs_group', 'b');
+       $subquery->addfield('ancestor_group_id')
+                ->condition('group_id', $group_id, '=');
+
+                
+       $query = db_select( 'ocs_group', 'a');
+       $groups = $query->fields( 'a')
+                       ->join($subquery, 'b', 'a.ancestor_group_id = b.ancestor_group_id')
+                       ->execute();
+                       
+       db_set_active('default');
+    } 
+
+    return $groups;
+}
+
 /*
 **  ajax select button in ocs_group table
 */
@@ -1302,6 +1328,7 @@ function ocs_admin_group_select($impl, $js=NULL, $type='group', $id=NULL)
 function ocs_admin_group_add_page( $impl = NULL, $arg = NULL, $init = TRUE)
 {
     $impl = '_wizard';
+    
     if (! isset($_SESSION['ocs_admin_group_save'])) {
         $_SESSION['ocs_admin_group_save'] = array();
     }
@@ -1459,5 +1486,4 @@ function ocs_admin_group_add_page_wizard_validate($form, &$form_state)
         }
     }
 }
-
 

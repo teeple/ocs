@@ -8,9 +8,9 @@ dependencies[] = date
 
 files[] = date_validation.module
 files[] = date_validation.validators.inc
-; Information added by drupal.org packaging script on 2012-02-13
-version = "7.x-1.0-beta5"
+; Information added by drupal.org packaging script on 2012-04-28
+version = "7.x-1.0"
 core = "7.x"
 project = "field_validation"
-datestamp = "1329135038"
+datestamp = "1335587455"
 

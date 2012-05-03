@@ -199,11 +199,8 @@ function update_ocs_param( $param)
         $node->title = $param_name;
         $node->field_ocs_client_id['und'][0]['tid'] = ocs_admin_get_term_id( 'ocs_client_id', 'OCS');
         $node->field_description['und'][0]['value'] = $param_info['param_desc'];
-        $node->field_ocs_param_type['und'][0]['value'] = 1;
-        /*
-        $node->field_ocs_param_value['und'][0]['value'] = $param_info['param_desc'];
-        $node->field_ocs_param_type['und'][0]['value'] = $param_info['param_desc'];
-        */
+        $node->field_ocs_param_type['und'][0]['value'] = ocs_admin_get_param_type( $param_info['param_type']);
+        $node->field_ocs_param_value['und'][0]['value'] = isset( $param_info['param_value']) ? json_encode( $param_info['param_value']) : '';
 
         node_save( $node);
     }

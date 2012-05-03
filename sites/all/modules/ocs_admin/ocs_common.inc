@@ -1,5 +1,28 @@
 <?php
 
+define( 'OCS_PARAM_TYPE_STRING', '1');
+define( 'OCS_PARAM_TYPE_INTEGER', '2');
+define( 'OCS_PARAM_TYPE_ENUM', '3');
+define( 'OCS_PARAM_TYPE_ACCOUNT_KEY', '4');
+define( 'OCS_PARAM_TYPE_DATE', '5');
+define( 'OCS_PARAM_TYPE_TIME', '6');
+define( 'OCS_PARAM_TYPE_PRODUCT_KEY', '7');
+
+function ocs_admin_get_param_type( $name)
+{
+    $optype = array(
+        'string' => OCS_PARAM_TYPE_STRING,
+        'integer' => OCS_PARAM_TYPE_INTEGER,
+        'enum' => OCS_PARAM_TYPE_ENUM,
+        'account_key' => OCS_PARAM_TYPE_ACCOUNT_KEY,
+        'date' => OCS_PARAM_TYPE_DATE,
+        'time' => OCS_PARAM_TYPE_TIME,
+        'product_key' => OCS_PARAM_TYPE_PRODUCT_KEY,
+    );
+
+    return isset( $optype[$name]) ? $optype[$name] : OCS_PARAM_TYPE_STRING;
+}
+
 /*
 ** @param
     parent_field_name : field name that points parent node
@@ -121,9 +144,8 @@ function ocs_admin_tree_table_theme( $form, $header)
   if (empty($rows)) {
     $rows[] = array(array('data' => $form['#empty_text'], 'colspan' => '7'));
   }
-  if ( isset($form['#footer'])) {
-    $rows[] = array(array('data' => $form['#footer'], 'colspan' => '7'));
-  }
+
+  $footer = ( isset($form['#footer'])) ?  array(array('data' => $form['#footer'], 'colspan' => '7')) : NULL;
 
   $output = '';
   if ( isset( $form['#caption'])) {
@@ -132,7 +154,8 @@ function ocs_admin_tree_table_theme( $form, $header)
   if ( isset( $form['#descriptoin'])) {
 	  $output .= $form['#description'];
   }
-  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
+  $output .= theme('table', array('header' => $header, 'rows' => $rows, 
+    'footer' => $footer, 'attributes' => array('id' => 'menu-overview')));
   $output .= drupal_render_children($form);
   return $output;
 }
@@ -171,15 +194,13 @@ function ocs_admin_table_theme( $form, $header)
   if (empty($rows)) {
     $rows[] = array(array('data' => $form['#empty_text'], 'colspan' => '7'));
   }
-  if ( isset($form['#footer'])) {
-    $rows[] = array(array('data' => $form['#footer'], 'colspan' => '7'));
-  }
+  $footer = ( isset($form['#footer'])) ?  array(array('data' => $form['#footer'], 'colspan' => '7')) : NULL;
 
   $output = '<br>';
   if ( isset( $form['#caption'])) {
       $output .= '<h3>' . $form['#caption'] . '</h3>';
   }
-  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
+  $output .= theme('table', array('header' => $header, 'footer' => $footer, 'rows' => $rows, 'attributes' => array('id' => 'menu-overview')));
   return $output;
 }
 

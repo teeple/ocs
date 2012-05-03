@@ -1,11 +1,5 @@
 <?php
 
-define( 'OCS_PARAM_TYPE_STRING', '1');
-define( 'OCS_PARAM_TYPE_INTEGER', '2');
-define( 'OCS_PARAM_TYPE_ENUM', '3');
-define( 'OCS_PARAM_TYPE_ACCOUNT_KEY', '4');
-define( 'OCS_PARAM_TYPE_GROUP_ID', '5');
-
 module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_action');
 module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_event');
 module_load_include( 'inc', 'ocs_admin', 'ocs_campaign_cond');

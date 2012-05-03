@@ -127,6 +127,11 @@ function ocs_admin_table_account()
         'help' => t('Account Key value such as MSISDN, User Name and etc'),
     ));
 
+    $data['ocs_account']['status'] = _get_string_field( array(
+        'title' => t('Status'),
+        'help' => t('Account Key Status'),
+    ));
+
     $data['ocs_account']['service_id'] = _get_numeric_field( array(
         'title' => t('Service Type ID'),
         'help' => t('Service Type ID such as Mobile, IPTV, VoIP and etc'),

@@ -1769,6 +1769,7 @@ function theme_breadcrumb($variables) {
  */
 function theme_table($variables) {
   $header = $variables['header'];
+  $footer = (isset($variables['footer'])) ? $variables['footer'] : NULL;
   $rows = $variables['rows'];
   $attributes = $variables['attributes'];
   $caption = $variables['caption'];
@@ -1896,6 +1897,19 @@ function theme_table($variables) {
       }
     }
     $output .= "</tbody>\n";
+  }
+
+  // bhtak format footer
+  if ( count($footer)) {
+      // HTML requires that the tfoot tag has tr tags in it followed by tbody
+      // tags. Using ternary operator to check and see if we have any rows.
+      $output .= (count($rows) ? ' <tfoot><tr>' : ' <tr>');
+      foreach ($footer as $cell) {
+            $cell = tablesort_header($cell, $footer, $ts);
+            $output .= _theme_table_cell($cell, TRUE);
+          }
+          // Using ternary operator to close the tags based on whether or not there are rows
+          $output .= (count($rows) ? " </tr></tfoot>\n" : "</tr>\n");
   }
 
   $output .= "</table>\n";

@@ -22,7 +22,7 @@ function date_validation_field_validation_validators() {
       'name' => "Date range",
       'field_types' => array(
         'textfield',
-        'textarea',
+        'date',
       ),
       'custom_error' => TRUE,
       'custom_data' => array(
@@ -40,93 +40,87 @@ function date_validation_field_validation_validators() {
 function date_validation_field_validation_validate($validator_name, $rule, $entity, $langcode, $items, &$errors) {
   if (!empty($items)) {
     switch ($validator_name) {
-     
+
       case "date_range":
         $date_range = _date_validation_date_range_check_data($rule['data']);
-				$unit = isset($date_range['unit']) ? $date_range['unit'] : 'global';
-				$start = isset($date_range['start']) ? $date_range['start'] : '';
-				$end = isset($date_range['end']) ? $date_range['end'] : '';
-				$start_contain = isset($date_range['start_contain']) ? $date_range['start_contain'] : TRUE;
-				$end_contain = isset($date_range['end_contain']) ? $date_range['end_contain'] : TRUE;
-				$less = isset($date_range['less']) ? $date_range['less'] : FALSE;
-				
-				//debug($date_range);
+        $unit = isset($date_range['unit']) ? $date_range['unit'] : 'global';
+        $start = isset($date_range['start']) ? $date_range['start'] : '';
+        $end = isset($date_range['end']) ? $date_range['end'] : '';
+        $start_contain = isset($date_range['start_contain']) ? $date_range['start_contain'] : TRUE;
+        $end_contain = isset($date_range['end_contain']) ? $date_range['end_contain'] : TRUE;
+        $less = isset($date_range['less']) ? $date_range['less'] : FALSE;
+
+        //debug($date_range);
         foreach ($items as $delta => $item) {
-				
-				  $flag = FALSE;
-					$data = $item[$rule['col']];
+          $flag = FALSE;
+          $data = $item[$rule['col']];
           if ($data != '' ) {
-					// support date, datetime
-					if(!is_numeric($data)){
-					  $data = strtotime($data);
-					}
-					
-					$date_str = date("Y-m-d H:i:s",$data);
-					//drupal_set_message('123:'.$date_str);
-					//$unit= 'global';
-					if($unit =='year'){
-					  $date_str = substr($date_str,5);
-					}elseif($unit =='month'){
-					  $date_str = substr($date_str,8);
-					}elseif($unit =='week'){
-					  $date_str = substr($date_str,10);
-						$week_day = date('w',strtotime($date_str));
-						$date_str = $week_day.$date_str;
-					}elseif($unit =='day'){
-					  $date_str = substr($date_str,11);
-					}elseif($unit =='hour'){
-					  $date_str = substr($date_str,14);
-					}elseif($unit =='minute'){
-					  $date_str = substr($date_str,17);
-					}
-					
-					if($date_str < $start){
-					  $flag = TRUE;
-					}
-					if($date_str > $end){
-					  $flag = TRUE;
-					}
-					if(!$start_contain && $date_str == $start){
-					  $flag = TRUE;
-					}
-					if(!$end_contain && $date_str == $end){
-					  $flag = TRUE;
-					}
-					if($less){
-					  $flag = $flag ? FALSE : TRUE;
-					}
-					/*
-				    $errors[$rule['field_name']][$langcode][$delta][] = array(
-              'error' => 'date_range_'.$rule['ruleid'], 
-              'message' => t($rule['error_message']),
-            );
-						*/
-						if($flag){
-						  $error = $rule['field_name'].']['.$langcode.']['.$delta.']['.$rule['col'];
-						  $message = t($rule['error_message']);
-						  form_set_error($error,$message);
-						}
+            // support date, datetime
+            if (!is_numeric($data)) {
+              $data = strtotime($data);
+            }
+
+            $date_str = date("Y-m-d H:i:s", $data);
+            //drupal_set_message('123:'.$date_str);
+            //$unit= 'global';
+            if ($unit =='year') {
+              $date_str = substr($date_str, 5);
+            }
+            elseif ($unit =='month') {
+              $date_str = substr($date_str, 8);
+            }
+            elseif ($unit =='week') {
+              $date_str = substr($date_str, 10);
+              $week_day = date('w', strtotime($date_str));
+              $date_str = $week_day . $date_str;
+            }
+            elseif ($unit =='day') {
+              $date_str = substr($date_str, 11);
+            }
+            elseif ($unit =='hour') {
+              $date_str = substr($date_str, 14);
+            }
+            elseif ($unit =='minute') {
+              $date_str = substr($date_str, 17);
+            }
+
+            if ($date_str < $start) {
+             $flag = TRUE;
+            }
+            if ($date_str > $end) {
+              $flag = TRUE;
+            }
+            if (!$start_contain && $date_str == $start) {
+              $flag = TRUE;
+            }
+            if (!$end_contain && $date_str == $end) {
+            $flag = TRUE;
+            }
+            if ($less) {
+              $flag = $flag ? FALSE : TRUE;
+            }
+
+            if ($flag) {
+              $error = $rule['field_name'] . '][' . $langcode . '][' . $delta . '][' . $rule['col'];
+              $message = t($rule['error_message']);
+              form_set_error($error, check_plain($message));
+            }
           }
         }
-
         break;
-				
-			
-     
-      
     }
   }
 }
 
-function _date_validation_date_range_check_data($data){
+function _date_validation_date_range_check_data($data) {
   $date_range = array(
-	  'unit' => 'global',
-		'start_contain' => TRUE,
-		'start' => '',
-		'end' => '',
-		'end_contain' => TRUE,
-		'less' => FALSE,
-	);
+    'unit' => 'global',
+    'start_contain' => TRUE,
+    'start' => '',
+    'end' => '',
+    'end_contain' => TRUE,
+    'less' => FALSE,
+  );
   // if no value was specified, don't validate
   if ($data == '') {
     return $date_range;
@@ -134,68 +128,67 @@ function _date_validation_date_range_check_data($data){
 
   if (strpos($data, '}') !== FALSE) {
     list($first, $second) = explode('}', $data);
-		//remove space
-		$first = trim($first);
-		//remove "{"
-		$first = substr($first,1);
-		$date_range['unit'] = trim($first); 
-		
-		list($start_raw, $end_raw) = explode(',', $second);
-		
-		//remove space
-		$start_raw = trim($start_raw);
-		$end_raw = trim($end_raw);
-		
-		$start_contain = substr($start_raw, 0, 1);
-		if($start_contain =='['){
-		  $date_range['start_contain'] = TRUE;
-		}elseif($start_contain =='('){
-		  $date_range['start_contain'] = FALSE;
-		}
-		
-		$start = substr($start_raw, 1);		
-		$date_range['start'] = trim($start);
-		
-		$end = substr($end_raw, 0, strlen($end_raw)-1);
-		
-		$date_range['end'] = trim($end);
-		
-		$end_contain = substr($end_raw, strlen($end_raw)-1, 1);
-		
-		if($end_contain ==']'){
-		  $date_range['end_contain'] = TRUE;
-		}elseif($end_contain ==')'){
-		  $date_range['end_contain'] = FALSE;
-		}	
-		
-		//support php date format when unit = 'global'
-		if($date_range['unit'] == 'global'){
-		  $date_range['start'] = strtotime($date_range['start']);
-			$date_range['start'] = date("Y-m-d H:i:s",$date_range['start']);
-			
-		  $date_range['end'] = strtotime($date_range['end']);
-			$date_range['end'] = date("Y-m-d H:i:s",$date_range['end']);			
-		}
-		
-		//if end less than start, reverse;
-		//then we could support: {year}(10-10 08:30:00, 02-13 20:30:00]
-		if($date_range['end'] < $date_range['start']){
-		  $date_range['less'] = TRUE;
-			
-		  $start = $date_range['start'];
-		  $start_contain = $date_range['start_contain'];
-			
-			$date_range['start'] = $date_range['end'];
-			$date_range['end'] = $start;
-			
-			$date_range['start_contain'] = $date_range['end_contain'] ? FALSE : TRUE;
-			$date_range['end_contain'] = $start_contain ? FALSE : TRUE;
-			
-		}
+    //remove space
+    $first = trim($first);
+    //remove "{"
+    $first = substr($first, 1);
+    $date_range['unit'] = trim($first); 
 
+    list($start_raw, $end_raw) = explode(',', $second);
+
+    //remove space
+    $start_raw = trim($start_raw);
+    $end_raw = trim($end_raw);
+
+    $start_contain = substr($start_raw, 0, 1);
+    if ($start_contain =='[') {
+      $date_range['start_contain'] = TRUE;
+    }
+    elseif ($start_contain =='(') {
+      $date_range['start_contain'] = FALSE;
+    }
+
+    $start = substr($start_raw, 1);
+    $date_range['start'] = trim($start);
+
+    $end = substr($end_raw, 0, strlen($end_raw)-1);
+
+    $date_range['end'] = trim($end);
+
+    $end_contain = substr($end_raw, strlen($end_raw)-1, 1);
+
+    if ($end_contain ==']') {
+      $date_range['end_contain'] = TRUE;
+    }
+    elseif ($end_contain ==')') {
+      $date_range['end_contain'] = FALSE;
+    }
+
+    //support php date format when unit = 'global'
+    if ($date_range['unit'] == 'global') {
+      $date_range['start'] = strtotime($date_range['start']);
+      $date_range['start'] = date("Y-m-d H:i:s", $date_range['start']);
+
+      $date_range['end'] = strtotime($date_range['end']);
+      $date_range['end'] = date("Y-m-d H:i:s", $date_range['end']);
+    }
+
+    //if end less than start, reverse;
+    //then we could support: {year}(10-10 08:30:00, 02-13 20:30:00]
+    if ($date_range['end'] < $date_range['start']) {
+      $date_range['less'] = TRUE;
+
+      $start = $date_range['start'];
+      $start_contain = $date_range['start_contain'];
+
+      $date_range['start'] = $date_range['end'];
+      $date_range['end'] = $start;
+
+      $date_range['start_contain'] = $date_range['end_contain'] ? FALSE : TRUE;
+      $date_range['end_contain'] = $start_contain ? FALSE : TRUE;
+    }
   }
-  	
-	return $date_range;
+  return $date_range;
 }
 
 
