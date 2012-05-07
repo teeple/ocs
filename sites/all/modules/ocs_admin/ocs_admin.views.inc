@@ -114,6 +114,10 @@ function ocs_admin_table_account()
             'left_field' => 'subscription_key',
             'field' => 'subscription_key',
         ),
+        'member' => array(
+            'left_field' => 'account_key',
+            'field' => 'account_key',
+        ),
     );
 
     $data['ocs_account']['customer_id'] = _get_string_field( array(
@@ -180,6 +184,18 @@ function ocs_admin_table_account()
             'label' => t('Counter'),
         ),
     );
+
+    $data['ocs_account']['group_member'] = array(
+        'title' => t('Members'),
+        'help' => t('Group member Information'),
+        'relationship' => array(
+            'base' => 'ocs_group_member',
+            'field' => 'account_key',
+            'handler' => 'views_handler_relationship',
+            'label' => t('Member'),
+        ),
+    );
+
 
     return $data;
 }    

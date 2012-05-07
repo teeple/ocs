@@ -153,7 +153,6 @@ function ocs_admin_group_edit_form_submit( $form, &$form_state)
         drupal_goto( 'ocs_admin/account/master/select', array( 'query' => $query));
     }
     else if ( $form_state['values']['op'] == 'Save') {
-        dpm( $group, 'submit group');
         // check the master number other group
         
         ocs_admin_group_save($group);
@@ -248,7 +247,6 @@ function ocs_admin_subgroup_add_form( $form, &$form_state, $groupid)
 
 function ocs_admin_subgroup_add_form_submit( $form, &$form_state)
 {
-dpm($form, 'form');
     if ( $form_state['values']['op'] == 'Search Account') {
         $query = array(
             'account_key' => $values['master_number'],
@@ -257,7 +255,6 @@ dpm($form, 'form');
     }
     else if ( $form_state['values']['op'] != 'Cancel') {
         $group = $form_state['values'];
-        dpm( $group, 'submit subgroup');
         ocs_admin_group_save($group);
 
         drupal_set_message( t('Your configuration has been saved.'));
@@ -291,12 +288,12 @@ function ocs_admin_db_get_group( $groupid)
 */
 function ocs_admin_subgroup_load( $groupid)
 {
-    dpm($groupid, 'groupid');
-    db_set_active('ocsdb');
-
+    $ancestor = ocs_admin_ancestor_load($groupid);
+    
     // get group information
+    db_set_active('ocsdb');
     $result = db_select( 'ocs_group', 'g')
-        ->condition( 'g.ancestor_group_id', $groupid, '=')
+        ->condition( 'g.ancestor_group_id', $ancestor['ancestor_group_id'], '=')
         ->fields( 'g')
         ->execute()
         ->fetchAllAssoc( 'group_id', PDO::FETCH_ASSOC);
@@ -333,8 +330,8 @@ function ocs_admin_db_get_group_count( $group_id, $master_number)
 */
 function ocs_admin_group_form( $form, &$form_state, $groupid)
 {
-    $group = group_load( $groupid);
-//  dpm( $group, 'Admin group form');
+  
+  $group = group_load( $groupid);
 
   $form['#attached']['css'] = array(drupal_get_path('module', 'ocs_admin') . '/ocs_admin.css');
 
@@ -350,7 +347,6 @@ function ocs_admin_group_form( $form, &$form_state, $groupid)
     'mlid' => 'group_id',
     'master_number' => 'master_number'), -1);
 
-//  dpm( $subgroups, 'subgroup');
   $tree = ocs_admin_get_sub_tree( array_shift( $tree));
  // dpm( $tree, 'tree');
 
@@ -432,6 +428,11 @@ function _ocs_group_tree_form($tree) {
         '#type' => 'link',
         '#title' => t('delete'),
         '#href' => 'ocs_admin/group/'. $item['mlid'] . '/delete');
+      $operations['list'] = array(
+        '#type' => 'link',
+        '#title' => t('members'),
+        '#href' => 'ocs_admin/group/'. $item['mlid']. '/member');
+
       $form[$mlid]['operations'] = $operations;  
     }
 
@@ -598,10 +599,8 @@ function ocs_admin_group_delete_confirm_submit( $form, &$form_state)
 */
 function ocs_admin_group_member_form( $form, &$form_state, $groupid = NULL, $records = NULL)
 {
-
     $group = group_load( $groupid);
-    dpm( $group, 'group');
-
+    
     $form['group_id'] =  array(
         '#type' => 'hidden',
         '#value' => $group['group_id'],
@@ -612,7 +611,9 @@ function ocs_admin_group_member_form( $form, &$form_state, $groupid = NULL, $rec
         '#value' => $group['ancestor_group_id'],
     );
 
-    $header = array( 'account_key' => 'Account Key', 'customer_name' => 'Cutomer Name');
+    $header = array( 'account_key' => 'Account Key', 'customer_name' => 'Cutomer Name',
+                     'extension' => 'Extension');
+
     $form['member'] =  array(
         '#type' => 'tableselect',
         '#header' => $header,
@@ -643,10 +644,7 @@ function ocs_admin_group_member_form( $form, &$form_state, $groupid = NULL, $rec
 function ocs_admin_group_member_form_submit( $form, &$form_state)
 {
     $form_state['redirect'] = 'ocs_admin/group/' . $form_state['values']['ancestor_group_id'] . '/member';
-
-    dpm( $form_state, 'submit group member');
     if ( $form_state['values']['op'] == 'Confirm') {
-
         $member = array(
             'group_id' => $form_state['values']['group_id'],
             'ancestor_group_id' => $form_state['values']['ancestor_group_id'],
@@ -675,7 +673,6 @@ function ocs_admin_member_add( $groupid = NULL, $arg = NULL)
     else {
         $_SESSION['ocs_admin_member_add'] = array();
     }
-
     $form = drupal_get_form( 'ocs_admin_group_member_form', $groupid, $_SESSION['ocs_admin_member_add']);
     $output = '<div id="ocs_admin_member_add_form_div">' . drupal_render( $form) . '</div>';
 
@@ -687,16 +684,12 @@ function ocs_admin_member_add( $groupid = NULL, $arg = NULL)
 */
 function ocs_member_select( $groupid, $js = NULL)
 {
-
     $arg = array( 
         'account_key' => $_GET['id'], 
         'customer_name' => $_GET['name'],
         $_GET['id'] => $_GET['id'],
     ); 
-
-    dpm( $arg, 'arg');
     $output = ocs_admin_member_add( $groupid, $arg);
-
     if ( $js) {
         ctools_include('ajax');
         $commands = array();
@@ -744,7 +737,7 @@ function ocs_admin_member_edit_form( $form, &$form_state, $group, $account_key)
         '#type' => 'textfield',
         '#title' => 'Usage',
         '#description' => 'Current Usage of this member',
-        '#default_value' => $account['account_usage'],
+        '#default_value' => ($account['account_usage'] == NULL) ? '0' : $account['account_usage'],
     );
 
     $form['actions'] = array('#type' => 'actions');
@@ -765,11 +758,9 @@ function ocs_admin_member_edit_form_submit( $form, &$form_state)
 {
     $member = $form_state['values'];
     if ( $form_state['values']['op'] == 'Save') {
-        dpm( $member, 'update member');
         ocs_admin_member_save( $member);
         drupal_set_message( t('The information has been updated.'));
     }
-
     $form_state['redirect'] = 'ocs_admin/group/' . $member['group_id'] . '/member/';
 }
 
@@ -833,7 +824,6 @@ function ocs_admin_group_save( $group)
             ->key( array( 'group_id' => $group['group_id']))
             ->fields( $fields)
             ->execute();
-        dpm( $status, 'db_merge result');
     }
     else {
         // insert
@@ -841,7 +831,6 @@ function ocs_admin_group_save( $group)
         $last_insert_id = db_insert( 'ocs_group', $options)
             ->fields( $fields)
             ->execute();
-        dpm( $last_insert_id, 'db_insert result');
 
         // update ancestor_group_id
         if ( $fields['ancestor_group_id'] == 0 && $last_insert_id > 0) {
@@ -851,7 +840,6 @@ function ocs_admin_group_save( $group)
                 ))
                 ->condition( 'group_id', $last_insert_id, '=')
                 ->execute();
-            dpm( $result, 'db_update result');
         }
     }
 
@@ -900,14 +888,12 @@ function ocs_admin_subgroup_delete( $group)
 function ocs_admin_member_save( $member)
 {
     db_set_active( 'ocsdb');
-
     $fields = array();
-    foreach( array( 'group_id', 'ancestor_group_id', 'account_key', 'extension', 'account_usage') as $field) {
+    foreach( array( 'group_id', 'ancestor_group_id', 'account_key', 'extension', 
+                    'account_usage') as $field) {
         if ( isset( $member[$field]))
             $fields[ $field] = $member[ $field];
     }
-
-    dpm( $fields, 'member save');
 
      // insert
      $status = db_merge( 'ocs_group_member')
@@ -917,6 +903,24 @@ function ocs_admin_member_save( $member)
     dpm( $status, 'db_merge result');
 
     db_set_active( 'default');
+}
+
+/*
+    find ancestor group id info
+*/
+function ocs_admin_ancestor_load( $groupid)
+{
+   db_set_active('ocsdb');
+
+   $query = db_select( 'ocs_group', 'g');
+   $result = $query->fields( 'g')
+        ->condition( 'group_id', $groupid, '=')
+        ->execute()
+        ->fetchAssoc();
+
+    db_set_active('default');
+
+    return $result;
 }
 
 
@@ -943,7 +947,7 @@ function ocs_admin_member_load( $account_key)
 /*
     load account keyr info
 */
-function ocs_admin_account_load( $master_number)
+function ocs_admin_master_load( $master_number)
 {
    db_set_active('ocsdb');
 
@@ -976,7 +980,7 @@ function ocs_admin_group_member_load( $group_id, $fields = array())
    $query = db_select( 'ocs_group_member', 'g');
    $result = $query->fields( 'g', $fields)
         ->orderBy( 'group_id')
-        ->condition( 'ancestor_group_id', $group_id, '=')
+        ->condition( 'group_id', $group_id, '=')
         ->execute()
         ->fetchAllAssoc( 'account_key', PDO::FETCH_ASSOC);
 
@@ -1012,13 +1016,22 @@ function cmp_group_id( $a, $b)
 
 function ocs_admin_member_list( $form, &$form_state, $groupid)
 {
+/*
+if (substr($groupid, 0, 1) == 'A'){
+        $groupid = explode('A', $groupid);
+        $group = group_load($groupid[1]);
+    } else {
+        $group = group_load($groupid);
+        $group = group_load($group['ancestor_group_id']);
+    }
+*/
     $group = group_load( $groupid);
-
+    dpm($group, 'group_list');
     $form['group_id'] = array(
         '#type' => 'hidden',
         '#value' => $groupid,
     );
-
+    
     $members = ocs_admin_group_member_load( $group['group_id']);
     $subgroup = ocs_admin_subgroup_load( $group['group_id']);
     $form['#subgroup'] = $subgroup;
@@ -1026,7 +1039,10 @@ function ocs_admin_member_list( $form, &$form_state, $groupid)
     // build subgroup select options
     $options = array();
     foreach( $subgroup as $item) {
-        $options[ $item['group_id']] = $item['group_name'];
+        // not show ancestor group
+        if ($item['parent_group_id'] != 0) {
+            $options[ $item['group_id']] = $item['group_name'];
+        }
     }
 
     $form['members'] = array(
@@ -1036,7 +1052,7 @@ function ocs_admin_member_list( $form, &$form_state, $groupid)
     );
 
     foreach( $members as $key => $member) {
-//        dpm( $member, 'member');
+        dpm( $member, 'member');
 
         $sub = &$form['#subgroup'][ $member['group_id']];
         $sub['members'][] = $key;
@@ -1053,6 +1069,14 @@ function ocs_admin_member_list( $form, &$form_state, $groupid)
             '#default_value' => $member['account_key'],
         );
 
+        $form['members'][$key][$key.':account_usage'] = array(
+            '#type' => 'textfield',
+            '#size' => 10,
+            '#title' => '',
+            '#default_value' => ($member['account_usage']) == NULL ? 0 : $member['account_usage'],
+        );
+
+
         $form['members'][$key][$key.':group_id'] = array(
             '#type' => 'select',
             '#options' => $options,
@@ -1063,13 +1087,6 @@ function ocs_admin_member_list( $form, &$form_state, $groupid)
                 'wrapper' => 'member_group_div',
             ),
             */
-        );
-
-        $form['members'][$key][$key.':account_usage'] = array(
-            '#type' => 'textfield',
-            '#size' => 10,
-            '#title' => '',
-            '#default_value' => $member['account_usage'],
         );
 
         $form['members'][$key][$key.':extension'] = array(
@@ -1120,30 +1137,26 @@ function ocs_admin_change_subgroup_js( $form, $form_state)
  */
 function theme_ocs_admin_member_list( $variables)
 {
-    dsm('member_list');
     drupal_add_tabledrag('menu-overview', 'order', 'sibling', 'menu-weight');
     $form = $variables['form'];
-//    dpm( $form, 'theme');
 
     $rows = array();
     $groupid = NULL;
     $subgroup = $form['#subgroup'];
 
     foreach( $subgroup as $sub) {
-//        dpm( $sub, 'sub');
-        $rows[] =  array( array( 'data' => t( 'Members of Subgroup <em>@group</em>', array( '@group' => $sub['group_name'])), 'colspan' => 7));
+        $rows[] =  array( array( 'data' => t( 'Members of Subgroup <em>@group</em>', 
+                                 array( '@group' => $sub['group_name'])), 'colspan' => 7));
 
         if ( isset( $sub['members'])) {
             foreach ($sub['members'] as $key ) {
                 $elm = &$form['members'][$key];
-//                dpm( $elm, 'elm');
-
                 $row = array();
                 $row[] = drupal_render($elm[$key.':group_id']);
                 $row[] = $key;
-                $row[] = drupal_render( $elm[$key.':account_usage']);
-                $row[] = drupal_render( $elm[$key.':extension']);
-                $row[] = drupal_render( $elm['operations']);
+                $row[] = drupal_render($elm[$key.':account_usage']);
+                $row[] = drupal_render($elm[$key.':extension']);
+                $row[] = drupal_render($elm['operations']);
 
                 $row = array_merge(array('data' => $row), $elm['#attributes']);
         //        $row['class'][] = 'draggable';
@@ -1154,9 +1167,6 @@ function theme_ocs_admin_member_list( $variables)
             $rows[] =  array( array( 'data' => t( 'No members'), 'colspan' => 7));
         }
     }
-
-//    dpm( $rows, 'row');
-
     if (empty($rows)) {
         $rows[] = array(array('data' => $form['#empty_text'], 'colspan' => '7'));
     }
@@ -1196,10 +1206,10 @@ function ocs_admin_member_list_validate( $form, &$form_state)
                     }
                     $ext[ $value] = $key;
                 }
-                else if ( $list[1] == 'usage' ) {
-                    if ( ! is_numeric( $value)) {
-                        form_set_error( $key, 'Invalid usage. Digits are required.');
-                    }
+            }
+            else if ( $list[1] == 'usage' ) {
+                if ( ! is_numeric( $value)) {
+                    form_set_error( $key, 'Invalid usage. Digits are required.');
                 }
             }
         }
@@ -1234,14 +1244,15 @@ function ocs_admin_member_list_submit( $form, &$form_state)
                 $updated[$list[0]][$list[1]] = $value;
             }
         }
-
-        foreach( $updated as $key => $value) {
- //           if ( count( $value) > 1) {
-                // as 'group_id' field is always included, the count must be bigger than 1
-                // to save the changes
-                dpm( $value, 'value');
-                ocs_admin_member_save( array_merge( array('account_key' => $key), $value));
-  //          }
+        if (isset($updated)) {
+            foreach( $updated as $key => $value) {
+ //               if ( count( $value) > 1) {
+                    // as 'group_id' field is always included, the count must be bigger than 1
+                    // to save the changes
+                    dsm('member save');
+                    ocs_admin_member_save( array_merge( array('account_key' => $key), $value));
+  //              }
+            }
         }
     }
 }
@@ -1274,29 +1285,6 @@ function group_load_all()
 
         db_set_active('default');
     } 
-
-    return $groups;
-}
-
-function ancestor_load($groupid)
-{
-   $groups = &drupal_static(__FUNCTION__);
-   if ( !isset( $groups)) {
-       db_set_active('ocsdb');
-
-       $subquery = db_select('ocs_group', 'b');
-       $subquery->addfield('ancestor_group_id')
-                ->condition('group_id', $group_id, '=');
-
-                
-       $query = db_select( 'ocs_group', 'a');
-       $groups = $query->fields( 'a')
-                       ->join($subquery, 'b', 'a.ancestor_group_id = b.ancestor_group_id')
-                       ->execute();
-                       
-       db_set_active('default');
-    } 
-
     return $groups;
 }
 
@@ -1473,17 +1461,29 @@ function ocs_admin_group_add_page_wizard_validate($form, &$form_state)
                             'Master number already exsits another group [group id:'.$group_id.']');
         }
 
-        $account_key = ocs_admin_account_load($master_number);
-        dpm($account_key, 'account_key');
+        $account_key = ocs_admin_master_load($master_number);
         if (is_null($account_key['account_key'])) {
             form_set_error( 'master number', 'Invalid master number');
         }
 
         $group_name = ocs_admin_group_name_load($form_state['values']['group_name']);
-        dpm($group_name, 'group_name');
         if ($group_name == $form_state['values']['group_name']){
             form_set_error( 'group_name', 'Already exists group name');    
         }
     }
 }
 
+/*
+function ocs_admin_db_query($groupid)
+{
+    
+    $sql = 'select group_id from ocsdata.ocs_group 
+             where group_id = (select ancestor_group_id 
+                                 from ocsdata.ocs_group 
+                                where group_id ='.$groupid.')';
+    $result = db_query($sql) -> fetchAll();
+    foreach($result as $node){
+        return $node->group_id;
+    }                              
+}
+*/

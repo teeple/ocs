@@ -380,3 +380,151 @@ function ocs_admin_campaign_action_save( $cond)
 
 */
 
+function ocs_admin_campaign_edit_action_form( $form, &$form_state, $campaign_id = NULL, $event_id=NULL)
+{
+	$options = &drupal_static( __FUNCTION__ . 'options', array());
+	$paramlist = &drupal_static( __FUNCTION__ . 'param', array());
+
+	$cond = isset( $form_state['values']['cond']) ? $form_state['values']['cond'] : NULL;
+
+	if ( empty( $options) || empty( $param)) {
+		$node = node_load( $event_id);
+//		dpm( $node, 'node');
+
+		foreach( $node->field_ocs_param_ref['und'] as $param) {
+			$para = node_load( $param['target_id']);
+//				dpm( $para, 'parameter');
+
+			// store select options
+			$key = $event_id . ':' . $param['target_id'];
+			$value = $para->title;
+			$options[ $node->title][ $key] = $value;
+			// store parameter info
+			$paramlist[$para->nid] = $para->field_ocs_param_type['und'][0]['value'];
+			$paramlist[$key] = $value;
+			if ( ! isset( $cond)) {
+				$cond = $event_id . ':' . $param['target_id'];
+			}
+
+			// add additional condition if the parameter is 'account key' type
+			if ( $para->field_ocs_param_type['und'][0]['value'] == OCS_PARAM_TYPE_ACCOUNT_KEY) {
+				$options[ $node->title][ $key.'account'] = $value . ' ...';
+				$paramlist[$para->nid.'account'] = OCS_PARAM_TYPE_ACCOUNT_KEY;
+				// reset the type of original parameter as string
+				$paramlist[$para->nid] = OCS_PARAM_TYPE_STRING;		
+			}
+		}
+
+		// get counter name list
+		module_load_include( 'inc', 'ocs_admin', 'ocs_counter');
+		$counter_list = ocs_admin_counter_name_load_all();
+		$counters = array();
+		foreach( $counter_list as $id => $value) {
+			$counters[$id] = $value['counter_name'];
+		}
+
+	}
+
+	if ( isset( $cond_id)) {
+		// if cond_id is not NULL, it's editing mode
+		$condition = ocs_admin_campaign_cond_load( $cond_id);
+//		dpm( $condition, 'condition');
+		$cond = $condition['event_id'].':'.$condition['param_id'];
+	}
+
+//	dpm( $options, 'options');
+	$form = array();
+
+	$form['#campaign_id'] = $campaign_id;
+	$form['#event_id'] = $event_id;
+	$form['#paramlist'] = $paramlist;
+	$form['#cond_id'] = $cond_id;
+
+	$form['event'] = array(
+		'#type' => 'markup',
+		'#markup' => t( 'Event : <em>@name</em>', array('@name' => $_GET['event_name'])), 
+	);
+
+	$form['cond'] = array(
+		'#type' => 'select',
+		'#title' => t('Parameters'),
+		'#options' => $options,
+		'#default_value' => $cond,
+		'#ajax' => array(
+			'callback' => 'ocs_admin_ajax_condition_operator',
+			'wrapper' => 'replace_operator_div',
+			),
+	);
+
+	$form['container'] = array(
+		'#type' => 'container',
+		'#prefix' => '<div id="replace_operator_div">',
+		'#suffix' => '</div>',
+	);
+
+	if ( substr( $cond, -7) == 'account') {
+		$form['container']['counter'] = array(
+			'#type' => 'select',
+			'#title' => t('Counter'),
+			'#options' => $counters,
+		);
+	}
+
+
+	$form['container']['operator'] = array(
+		'#type' => 'select',
+		'#title' => 'Operator',
+		'#options' => _campaign_operator( $paramlist, $cond),
+		'#default_value' => isset($condition) ? $condition['operator'] : NULL,
+	);
+
+	$form['valueset'] = array(
+		'#type' => 'fieldset',
+		'#title' => 'Value',
+		'#prefix' => '<div id="replace_value_div">',
+		'#suffix' => '</div>',
+	);
+
+	$direct_input =  isset( $form_state['values']['value_type']) ? $form_state['values']['value_type'] : 1;
+	$form['valueset']['value_type'] = array(
+		'#type' => 'checkbox',
+		'#title' => 'Input direct value',
+		'#default_value' => $direct_input,
+		'#ajax' => array(
+			'callback' => 'ocs_admin_ajax_value_type',
+			'wrapper' => 'replace_value_div',
+		),
+	);
+
+
+	if ( $direct_input ) {
+		$form['valueset']['value'] = array(
+			'#type' => 'textfield',
+			'#title' => 'Value',
+			'#size' => 30,
+			'#default_value' => isset($condition) ? $condition['value'] : NULL,
+		);
+	}
+	else {
+		$form['valueset']['value_list'] = array(
+			'#type' => 'select',
+			'#title' => 'Customer\'s Account Balance',
+			'#options' => $counters,
+		);
+	}
+
+	$form['actions'] = array('#type' => 'actions');
+	$form['actions']['submit'] = array(
+		'#type' => 'submit',
+		'#value' => t('Save configuration'),
+	);
+
+	$form['actions']['cancel'] = array(
+		'#type' => 'submit',
+		'#value' => t('Cancel'),
+	);
+
+	return $form;
+}
+
+

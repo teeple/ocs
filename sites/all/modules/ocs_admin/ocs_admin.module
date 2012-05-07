@@ -279,9 +279,18 @@ function ocs_admin_menu() {
     );
 
     // menu items for ajax callback
-    $items['ocs_admin/campaign/%/rule/%ctools_js/%/%'] = array(
-        'title' => 'Callback for adding AND or OR condition',
-        'page callback' => 'ocs_admin_campaign_condition_add',
+    $items['ocs_admin/campaign/%/event/%/rule/%ctools_js/%'] = array(
+        'title' => 'Callback for adding a new rule',
+        'page callback' => 'ocs_admin_ajax_add_campaign_rule',
+        'page arguments' => array( 2, 4, 6, 7),     // nojs/AND/add, nojs/id/delete
+        'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+        'file' => 'ocs_campaign.inc',
+    );
+
+    $items['ocs_admin/campaign/%/rule/%/%ctools_js/%'] = array(
+        'title' => 'Callback for adding a new rule',
+        'page callback' => 'ocs_admin_ajax_add_campaign_rule',
         'page arguments' => array( 2, 4, 5, 6),     // nojs/AND/add, nojs/id/delete
         'access arguments' => array('access content'),
         'type' => MENU_CALLBACK,

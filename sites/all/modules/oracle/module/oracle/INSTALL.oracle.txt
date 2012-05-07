@@ -1,0 +1,75 @@
+
+HOW TO INSTALL ORACLE SUPPORT IN DRUPAL 7
+
+EXTRACT FILES
+
+  cd <path to drupal dir>/includes/database/
+  tar xzvf <oracle-7.x-*.tar.gz>
+  cd oracle/module
+  mv oracle <path to drupal dir>/sites/all/modules
+
+CREATE A SCHEMA
+
+  Create a user with appropriate defauls and temporary tablespaces:
+
+    sqlplus / as sysdba
+
+    grant connect,resource to drupal identified by drupal;
+    alter user drupal default tablespace users temporary tablespace temp;
+    grant execute on dbms_crypto to drupal;
+
+    -- Optionally to use performance views:
+    grant select on v_$sql_plan to drupal;
+    grant select on v_$sqlarea to drupal;
+
+  Or if you want to use table prefixes (read for details http://api.drupal.org/api/drupal/sites--default--default.settings.php/7/source):
+
+    grant dba, create any trigger, drop any table, select any table,
+      select any sequence, create user to drupal identified by drupal;
+    grant connect, resource to drupal with admin option;
+    alter user drupal default tablespace users temporary tablespace temp;
+
+  (TODO: those privilege are actually relaxed and should be better
+   defined in the future, in general they are not needed for existing tables,
+   but if you use modules like "Testing" you need to grant the drupal user rights 
+   to create users because this kind of modules creates tables prefixes on the fly)
+
+INSTALL DRUPAL
+
+  Run http://<host>:<port>/drupal/install.php
+
+  Refer to Drupal installation instructions for general information.
+
+  For Oracle Database, typically the "Database name" will be the
+  Oracle service name and the "Database Host" (A required field shown
+  in the "Advanced" section) will the database's host server name.
+  For example to use Oracle Database XE which is running on the same
+  machine as Drupal, set "Database name" to "XE" and "Database host"
+  to "localhost".
+
+  Thanks to siromega it is possible to use a tnsnames.ora alias or any
+  TNS valid string by specifying USETNS as the "Database host" at
+  installation time and using the TNS string in the "Database name"
+  field.  This may be particularly useful if you need to connect to an
+  Oracle RAC instance.
+
+
+POST INSTALLATION
+
+  Once your site is installed go to
+    http://<host>:<port>/drupal/admin/modules
+  and enable the Oracle module.
+
+  Then go to
+    http://<host>:<port>/admin/config/development/oracle/blob
+  and click "Schedule"
+
+  Finally create linguistic indexes in your desired tablespace.  If no
+  tablespace name is passed, the indexes are created in the USERS
+  tablespace.
+
+    sqlplus drupal/drupal
+    exec create_linguistic_indexes('MYINDEXTABLESPACENAME')
+
+
+ENJOY

@@ -33,7 +33,6 @@ function ocs_admin_account_select_row( $args)
     //ctools_include('ajax'); // Module  include the dependence it needs for ajax.
     drupal_add_library('system', 'drupal.ajax');
     $dest = current_path() . '/nojs'. (is_array( $args) ? '' : $arg);
-
     return l( t('select'), $dest, array('html' => TRUE, 
         'attributes' => array('class' => array('use-ajax')),
         'query' => (is_array($args) ? $args : NULL)

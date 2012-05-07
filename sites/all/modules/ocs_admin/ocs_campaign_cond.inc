@@ -1,6 +1,6 @@
 <?php
 
-function ocs_admin_campaign_add_cond_form( $form, &$form_state, $campaign_id = NULL, $cond_id=NULL)
+function ocs_admin_campaign_add_cond_form( $form, &$form_state, $campaign_id = NULL, $event_id=NULL)
 {
 	$options = &drupal_static( __FUNCTION__ . 'options', array());
 	$paramlist = &drupal_static( __FUNCTION__ . 'param', array());
@@ -8,36 +8,30 @@ function ocs_admin_campaign_add_cond_form( $form, &$form_state, $campaign_id = N
 	$cond = isset( $form_state['values']['cond']) ? $form_state['values']['cond'] : NULL;
 
 	if ( empty( $options) || empty( $param)) {
-		$events = ocs_admin_campaign_events_load_all( $campaign_id);
-//		dpm( $events, 'events');
+		$node = node_load( $event_id);
+//		dpm( $node, 'node');
 
-		foreach( array_keys($events) as $event_id) {
-			$node = node_load( $event_id);
-	//		dpm( $node, 'node');
-
-			foreach( $node->field_ocs_param_ref['und'] as $param) {
-				$para = node_load( $param['target_id']);
+		foreach( $node->field_ocs_param_ref['und'] as $param) {
+			$para = node_load( $param['target_id']);
 //				dpm( $para, 'parameter');
 
-				// store select options
-				$key = $event_id . ':' . $param['target_id'];
-				$value = $node->title . ' : ' . $para->title;
-				$options[ $node->title][ $key] = $value;
-				// store parameter info
-				$paramlist[$para->nid] = $para->field_ocs_param_type['und'][0]['value'];
-				$paramlist[$key] = $value;
-				if ( ! isset( $cond)) {
-					$cond = $event_id . ':' . $param['target_id'];
-				}
+			// store select options
+			$key = $event_id . ':' . $param['target_id'];
+			$value = $para->title;
+			$options[ $node->title][ $key] = $value;
+			// store parameter info
+			$paramlist[$para->nid] = $para->field_ocs_param_type['und'][0]['value'];
+			$paramlist[$key] = $value;
+			if ( ! isset( $cond)) {
+				$cond = $event_id . ':' . $param['target_id'];
+			}
 
-				// add additional condition if the parameter is 'account key' type
-				if ( $para->field_ocs_param_type['und'][0]['value'] == OCS_PARAM_TYPE_ACCOUNT_KEY) {
-					$options[ $node->title][ $key.'account'] = $value . ' ...';
-					$paramlist[$para->nid.'account'] = OCS_PARAM_TYPE_ACCOUNT_KEY;
-					// reset the type of original parameter as string
-					$paramlist[$para->nid] = OCS_PARAM_TYPE_STRING;		
-				}
-
+			// add additional condition if the parameter is 'account key' type
+			if ( $para->field_ocs_param_type['und'][0]['value'] == OCS_PARAM_TYPE_ACCOUNT_KEY) {
+				$options[ $node->title][ $key.'account'] = $value . ' ...';
+				$paramlist[$para->nid.'account'] = OCS_PARAM_TYPE_ACCOUNT_KEY;
+				// reset the type of original parameter as string
+				$paramlist[$para->nid] = OCS_PARAM_TYPE_STRING;		
 			}
 		}
 
@@ -62,8 +56,14 @@ function ocs_admin_campaign_add_cond_form( $form, &$form_state, $campaign_id = N
 	$form = array();
 
 	$form['#campaign_id'] = $campaign_id;
+	$form['#event_id'] = $event_id;
 	$form['#paramlist'] = $paramlist;
 	$form['#cond_id'] = $cond_id;
+
+	$form['event'] = array(
+		'#type' => 'markup',
+		'#markup' => t( 'Event : <em>@name</em>', array('@name' => $_GET['event_name'])), 
+	);
 
 	$form['cond'] = array(
 		'#type' => 'select',
@@ -298,46 +298,33 @@ function ocs_admin_campaign_cond_load( $cond_id)
 
 
 /*
-   add or delete conditions
+   add or delete rule
 
-   when adding AND or OR condition : AND/add, OR/add
-   when deleting condition: <id>/delete
    */
-function ocs_admin_campaign_condition_add( $campaign_id, $js, $cond_id, $op)
+function ocs_admin_ajax_add_campaign_rule( $campaign_id, $event_or_rule_id, $js, $op)
 {
 	if ( $op == 'delete') {
-		ocs_admin_campaign_condition_delete( $cond_id);
+		ocs_admin_campaign_rule_delete( $event_or_rule_id);
 	}
 	else {	// add
-		// add AND condition
-		$cond = array(
-			'cond_id' => NULL,
+		// add a new rule
+		$rule = array(
 			'campaign_id' => $campaign_id,
-			'event_id' => 0,
-			'param_id' => 0,
-			'param_name' => 'AND',
-			'operator' => 'AND',
-			'value' => NULL,
-			'cond_name' => strtoupper($cond_id),
+			'event_id' => $event_or_rule_id,
 		);
-		ocs_admin_campaign_condition_save( $cond);
+
+		ocs_admin_campaign_rule_save( $rule);
 	}
 
 	$form = drupal_get_form( 'ocs_admin_campaign_rule_form', $campaign_id);
-    $header = array(
-        t('Name'),
-        t('Weight'),
-        array( 'data' => t('Operations'), 'colspan' => '3'),
-    );
 
     // event table
-    $output = '<div id="ocs_admin_campaign_cond_div">'. 
-		ocs_admin_tree_table_theme( $form, $header) . '</div>' ;
+    $output = ocs_admin_campaign_rule_theme( $form);
 
 	if ( $js) {
 		ctools_include('ajax');
 		$commands = array();
-		$commands[] = ajax_command_replace( '#ocs_admin_campaign_cond_div', $output);
+		$commands[] = ajax_command_replace( '#ocs_admin_campaign_rule_div', $output);
 		print ajax_render( $commands);
 		exit;
 	}
@@ -365,4 +352,32 @@ function ocs_admin_campaign_conditions_load_all( $campaign_id)
     db_set_active( 'default');
 
     return $result;
+}
+
+function ocs_admin_campaign_rule_save( $rule)
+{
+    db_set_active('ocsdb');
+
+	$result = db_insert( 'ocs_campaign_rule')
+		->fields( $rule)
+		->execute();
+    dpm( $result, 'db_merge result');
+
+    db_set_active( 'default');
+
+	return $result;
+}
+
+
+function ocs_admin_campaign_rule_delete( $rule_id)
+{
+    db_set_active('ocsdb');
+
+	$result = db_delete( 'ocs_campaign_rule')
+		->condition( 'rule_id', $rule_id, '=')
+		->execute();
+
+    db_set_active( 'default');
+
+	return $result;
 }
